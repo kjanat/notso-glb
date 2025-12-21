@@ -1,0 +1,17 @@
+[project]
+name = "notso-glb"
+version = "0.1.0"
+description = "GLB Export Optimizer for Mascot Models"
+readme = "README.md"
+requires-python = "==3.11.*"
+authors = [{ name = "Kaj Kowalski", email = "info@kajkowalski.nl" }]
+dependencies = [
+  "bpy",
+]
+
+[project.scripts]
+notso-glb = "notso_glb:main"
+
+[build-system]
+requires = ["uv_build>=0.9.18,<0.10.0"]
+build-backend = "uv_build"
