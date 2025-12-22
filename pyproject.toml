@@ -1,3 +1,5 @@
+#:tombi schema.strict = false
+
 [project]
 name = "notso-glb"
 version = "0.1.0"
@@ -14,7 +16,7 @@ notso-glb = "notso_glb:main"
 
 [dependency-groups]
 dev = [
-  "bpy>=5.0.1",
+  "fake-bpy-module>=20251003",
   "pytest>=9.0.2",
   "pytest-cov>=7.0.0",
   "ruff>=0.14.10",
@@ -24,6 +26,12 @@ dev = [
 [build-system]
 requires = ["uv_build>=0.9.18,<0.10.0"]
 build-backend = "uv_build"
+
+[tool.pytest]
+strict = true
+minversion = "9.0"
+addopts = ["-ra", "--cov", "--import-mode=importlib"]
+testpaths = ["tests"]
 
 [tool.ruff]
 # Same as Black.

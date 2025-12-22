@@ -6,15 +6,34 @@ Uses real bpy module (Blender as Python module) for accurate testing.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import pytest
 
-from notso_glb._bpy import bpy
+import bpy  # type: ignore[import-untyped]
+from bpy.types import Armature, Mesh, Object
 
 if TYPE_CHECKING:
     pass
+
+
+def _active_object() -> Object:
+    """Get the active object, raising if None."""
+    obj = bpy.context.active_object
+    if obj is None:
+        raise RuntimeError("No active object")
+    return obj
+
+
+def _get_mesh_data(obj: Object) -> Mesh:
+    """Get mesh data from an object, assuming obj.type == 'MESH'."""
+    return cast(Mesh, obj.data)
+
+
+def _get_armature_data(obj: Object) -> Armature:
+    """Get armature data from an object, assuming obj.type == 'ARMATURE'."""
+    return cast(Armature, obj.data)
 
 
 # =============================================================================
@@ -202,7 +221,7 @@ class TestGetSceneStats:
         assert stats["bones"] == 0
         assert stats["actions"] == 0
 
-    def test_scene_with_meshes(self, cube_mesh: bpy.types.Object) -> None:
+    def test_scene_with_meshes(self, cube_mesh: Object) -> None:
         """Scene with meshes should count correctly"""
         from notso_glb.glb_export_optimizer import get_scene_stats
 
@@ -210,7 +229,7 @@ class TestGetSceneStats:
         assert stats["meshes"] == 1
         assert stats["vertices"] == 8  # Cube has 8 vertices
 
-    def test_scene_with_armature(self, armature_with_bones: bpy.types.Object) -> None:
+    def test_scene_with_armature(self, armature_with_bones: Object) -> None:
         """Scene with armature should count bones"""
         from notso_glb.glb_export_optimizer import get_scene_stats
 
@@ -232,13 +251,13 @@ class TestCleanVertexGroups:
 
         assert clean_vertex_groups() == 0
 
-    def test_mesh_without_vertex_groups(self, cube_mesh: bpy.types.Object) -> None:
+    def test_mesh_without_vertex_groups(self, cube_mesh: Object) -> None:
         """Mesh without vertex groups should return 0"""
         from notso_glb.glb_export_optimizer import clean_vertex_groups
 
         assert clean_vertex_groups() == 0
 
-    def test_removes_empty_vertex_groups(self, cube_mesh: bpy.types.Object) -> None:
+    def test_removes_empty_vertex_groups(self, cube_mesh: Object) -> None:
         """Empty vertex groups (no weights) should be removed"""
         from notso_glb.glb_export_optimizer import clean_vertex_groups
 
@@ -249,7 +268,7 @@ class TestCleanVertexGroups:
         removed = clean_vertex_groups()
         assert removed == 2
 
-    def test_keeps_weighted_vertex_groups(self, cube_mesh: bpy.types.Object) -> None:
+    def test_keeps_weighted_vertex_groups(self, cube_mesh: Object) -> None:
         """Vertex groups with weights should be kept"""
         from notso_glb.glb_export_optimizer import clean_vertex_groups
 
@@ -279,15 +298,13 @@ class TestDeleteBoneShapeObjects:
 
         assert delete_bone_shape_objects() == 0
 
-    def test_deletes_icosphere_named_objects(
-        self, bone_shape_object: bpy.types.Object
-    ) -> None:
+    def test_deletes_icosphere_named_objects(self, bone_shape_object: Object) -> None:
         """Objects with bone shape names should be deleted"""
         from notso_glb.glb_export_optimizer import delete_bone_shape_objects
 
         # Also add a regular cube that should NOT be deleted
         bpy.ops.mesh.primitive_cube_add()
-        bpy.context.active_object.name = "RegularCube"
+        _active_object().name = "RegularCube"
 
         deleted = delete_bone_shape_objects()
         assert deleted == 1
@@ -299,7 +316,7 @@ class TestDeleteBoneShapeObjects:
         from notso_glb.glb_export_optimizer import delete_bone_shape_objects
 
         bpy.ops.mesh.primitive_cube_add()
-        bpy.context.active_object.name = "widget_root"
+        _active_object().name = "widget_root"
 
         deleted = delete_bone_shape_objects()
         assert deleted == 1
@@ -313,15 +330,13 @@ class TestDeleteBoneShapeObjects:
 class TestGetBonesUsedForSkinning:
     """Tests for get_bones_used_for_skinning function"""
 
-    def test_no_skinned_meshes(self, cube_mesh: bpy.types.Object) -> None:
+    def test_no_skinned_meshes(self, cube_mesh: Object) -> None:
         """Scene without skinned meshes should return empty set"""
         from notso_glb.glb_export_optimizer import get_bones_used_for_skinning
 
         assert get_bones_used_for_skinning() == set()
 
-    def test_skinned_mesh_returns_bone_names(
-        self, skinned_mesh: bpy.types.Object
-    ) -> None:
+    def test_skinned_mesh_returns_bone_names(self, skinned_mesh: Object) -> None:
         """Skinned mesh should return vertex group names as bone names"""
         from notso_glb.glb_export_optimizer import get_bones_used_for_skinning
 
@@ -338,13 +353,13 @@ class TestGetBonesUsedForSkinning:
 class TestAnalyzeSkinnedMeshParents:
     """Tests for analyze_skinned_mesh_parents function"""
 
-    def test_no_skinned_meshes(self, cube_mesh: bpy.types.Object) -> None:
+    def test_no_skinned_meshes(self, cube_mesh: Object) -> None:
         """Scene without skinned meshes should return empty list"""
         from notso_glb.glb_export_optimizer import analyze_skinned_mesh_parents
 
         assert analyze_skinned_mesh_parents() == []
 
-    def test_skinned_mesh_at_root(self, skinned_mesh: bpy.types.Object) -> None:
+    def test_skinned_mesh_at_root(self, skinned_mesh: Object) -> None:
         """Skinned mesh parented to armature is normal, detect if has other parent"""
         from notso_glb.glb_export_optimizer import analyze_skinned_mesh_parents
 
@@ -369,20 +384,18 @@ class TestAnalyzeUnusedUvMaps:
 
         assert analyze_unused_uv_maps() == []
 
-    def test_mesh_without_uv_maps(self, cube_mesh: bpy.types.Object) -> None:
+    def test_mesh_without_uv_maps(self, cube_mesh: Object) -> None:
         """Mesh without UV maps should not warn"""
         from notso_glb.glb_export_optimizer import analyze_unused_uv_maps
 
         # Remove default UV if any
-        mesh = cube_mesh.data
+        mesh = _get_mesh_data(cube_mesh)
         while mesh.uv_layers:
             mesh.uv_layers.remove(mesh.uv_layers[0])
 
         assert analyze_unused_uv_maps() == []
 
-    def test_detects_unused_secondary_uv(
-        self, mesh_with_uv_layers: bpy.types.Object
-    ) -> None:
+    def test_detects_unused_secondary_uv(self, mesh_with_uv_layers: Object) -> None:
         """Secondary UV maps not referenced by materials should be detected"""
         from notso_glb.glb_export_optimizer import analyze_unused_uv_maps
 
@@ -390,7 +403,7 @@ class TestAnalyzeUnusedUvMaps:
         # Should detect unused UV maps
         assert len(warnings) >= 1
         # Check that some unused UVs were found
-        total_unused = sum(len(w["unused_uvs"]) for w in warnings)
+        total_unused = sum(len(cast(list[str], w["unused_uvs"])) for w in warnings)
         assert total_unused >= 1
 
 
@@ -402,7 +415,7 @@ class TestAnalyzeUnusedUvMaps:
 class TestAnalyzeDuplicateNames:
     """Tests for analyze_duplicate_names function"""
 
-    def test_no_duplicates(self, cube_mesh: bpy.types.Object) -> None:
+    def test_no_duplicates(self, cube_mesh: Object) -> None:
         """Scene with unique names should return empty or minimal list"""
         from notso_glb.glb_export_optimizer import analyze_duplicate_names
 
@@ -417,17 +430,15 @@ class TestAnalyzeDuplicateNames:
 
         # Create objects with names that collide after sanitization
         bpy.ops.mesh.primitive_cube_add()
-        bpy.context.active_object.name = "Cube.001"
+        _active_object().name = "Cube.001"
         bpy.ops.mesh.primitive_cube_add()
-        bpy.context.active_object.name = "Cube_001"
+        _active_object().name = "Cube_001"
 
         duplicates = analyze_duplicate_names()
         collision = [d for d in duplicates if d["issue"] == "SANITIZATION_COLLISION"]
         assert len(collision) >= 1
 
-    def test_detects_bone_duplicates(
-        self, armature_with_bones: bpy.types.Object
-    ) -> None:
+    def test_detects_bone_duplicates(self, armature_with_bones: Object) -> None:
         """Duplicate bone names within armature should be detected"""
         from notso_glb.glb_export_optimizer import analyze_duplicate_names
 
@@ -448,16 +459,16 @@ class TestAnalyzeDuplicateNames:
 class TestAnalyzeMeshBloat:
     """Tests for analyze_mesh_bloat function"""
 
-    def test_low_poly_mesh_no_warning(self, cube_mesh: bpy.types.Object) -> None:
+    def test_low_poly_mesh_no_warning(self, cube_mesh: Object) -> None:
         """Low poly mesh should not trigger warnings"""
         from notso_glb.glb_export_optimizer import analyze_mesh_bloat
 
         warnings = analyze_mesh_bloat()
         # Simple cube shouldn't trigger any warnings
-        prop_warnings = [w for w in warnings if "PROP" in w.get("issue", "")]
+        prop_warnings = [w for w in warnings if "PROP" in cast(str, w.get("issue", ""))]
         assert len(prop_warnings) == 0
 
-    def test_high_vert_prop_warning(self, high_poly_mesh: bpy.types.Object) -> None:
+    def test_high_vert_prop_warning(self, high_poly_mesh: Object) -> None:
         """High-poly non-skinned mesh should trigger warnings"""
         from notso_glb.glb_export_optimizer import analyze_mesh_bloat
 
@@ -476,7 +487,7 @@ class TestAnalyzeMeshBloat:
 class TestCountMeshIslands:
     """Tests for count_mesh_islands function"""
 
-    def test_single_mesh_one_island(self, cube_mesh: bpy.types.Object) -> None:
+    def test_single_mesh_one_island(self, cube_mesh: Object) -> None:
         """Single connected mesh should have 1 island"""
         from notso_glb.glb_export_optimizer import count_mesh_islands
 
@@ -489,15 +500,17 @@ class TestCountMeshIslands:
 
         # Create two separate cubes and join them
         bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0))
-        cube1 = bpy.context.active_object
+        cube1 = _active_object()
         bpy.ops.mesh.primitive_cube_add(location=(10, 0, 0))
-        cube2 = bpy.context.active_object
+        cube2 = _active_object()
 
         # Join them into one object
         bpy.ops.object.select_all(action="DESELECT")
         cube1.select_set(True)
         cube2.select_set(True)
-        bpy.context.view_layer.objects.active = cube1
+        view_layer = bpy.context.view_layer
+        if view_layer is not None:
+            view_layer.objects.active = cube1
         bpy.ops.object.join()
 
         islands = count_mesh_islands(cube1)
@@ -688,16 +701,14 @@ class TestRemoveUnusedUvMaps:
 
         assert remove_unused_uv_maps([]) == 0
 
-    def test_removes_specified_uv_maps(
-        self, mesh_with_uv_layers: bpy.types.Object
-    ) -> None:
+    def test_removes_specified_uv_maps(self, mesh_with_uv_layers: Object) -> None:
         """Should remove UV maps specified in warnings"""
         from notso_glb.glb_export_optimizer import remove_unused_uv_maps
 
-        mesh = mesh_with_uv_layers.data
+        mesh = _get_mesh_data(mesh_with_uv_layers)
         initial_count = len(mesh.uv_layers)
 
-        warnings = [
+        warnings: list[dict[str, object]] = [
             {
                 "mesh": mesh_with_uv_layers.name,
                 "unused_uvs": ["UVMap.001"],
@@ -726,12 +737,13 @@ class TestMarkStaticBonesNonDeform:
         assert marked == 0
         assert skipped == 0
 
-    def test_marks_static_bones(self, armature_with_bones: bpy.types.Object) -> None:
+    def test_marks_static_bones(self, armature_with_bones: Object) -> None:
         """Static bones not used for skinning should be marked non-deform"""
         from notso_glb.glb_export_optimizer import mark_static_bones_non_deform
 
         # Get bone names
-        bone_names = {b.name for b in armature_with_bones.data.bones}
+        arm_data = _get_armature_data(armature_with_bones)
+        bone_names = {b.name for b in arm_data.bones}
 
         marked, skipped = mark_static_bones_non_deform(bone_names)
         # All bones should be marked since no mesh is skinned to them
@@ -747,11 +759,12 @@ class TestMarkStaticBonesNonDeform:
 class TestCleanupMeshBmesh:
     """Tests for cleanup_mesh_bmesh function"""
 
-    def test_clean_mesh_no_changes(self, cube_mesh: bpy.types.Object) -> None:
+    def test_clean_mesh_no_changes(self, cube_mesh: Object) -> None:
         """Clean mesh should have no changes"""
         from notso_glb.glb_export_optimizer import cleanup_mesh_bmesh
 
         stats = cleanup_mesh_bmesh(cube_mesh)
+        assert stats is not None
 
         assert stats["doubles_merged"] == 0
         assert stats["degenerate_dissolved"] == 0
@@ -786,9 +799,9 @@ class TestAutoFixDuplicateNames:
 
         # Create objects with names that collide after sanitization
         bpy.ops.mesh.primitive_cube_add()
-        bpy.context.active_object.name = "Test.001"
+        _active_object().name = "Test.001"
         bpy.ops.mesh.primitive_cube_add()
-        bpy.context.active_object.name = "Test_001"
+        _active_object().name = "Test_001"
 
         # Simulate the duplicate detection result format
         duplicates = [
@@ -815,10 +828,7 @@ class TestAutoFixDuplicateNames:
         mesh1 = bpy.data.meshes.new("DupMesh")
         mesh2 = bpy.data.meshes.new("DupMesh")
 
-        # Get actual names (Blender may have renamed)
-        names = [mesh1.name, mesh2.name]
-
-        # Only test if we actually got duplicates
+        # Only test if we actually got duplicates (Blender may have renamed)
         if mesh1.name == mesh2.name:
             duplicates = [
                 {

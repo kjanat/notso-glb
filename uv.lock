@@ -112,6 +112,15 @@ wheels = [
 ]
 
 [[package]]
+name = "fake-bpy-module"
+version = "20251003"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3a/d7/8e34a795715d18497a257929ace8776a94d6c2c744e36b61e75567cbda64/fake_bpy_module-20251003.tar.gz", hash = "sha256:43d7fd082efc34497e238de3ad4d31fb850f2d1a8bb07418ae36eae56c1c7434", size = 973644, upload-time = "2025-10-03T06:19:57.638Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c6/24/d318f51ae1ebe953038984ed26fa0f9cd5466ef83da30c317282645695ec/fake_bpy_module-20251003-py3-none-any.whl", hash = "sha256:424f75fee6f300fc6d8e0d39abb28dbccd8777f611afa47ecdb9a03c00f2f43f", size = 1103011, upload-time = "2025-10-03T06:19:55.524Z" },
+]
+
+[[package]]
 name = "idna"
 version = "3.11"
 source = { registry = "https://pypi.org/simple" }
@@ -139,7 +148,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "bpy" },
+    { name = "fake-bpy-module" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
@@ -151,7 +160,7 @@ requires-dist = [{ name = "bpy" }]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "bpy", specifier = ">=5.0.1" },
+    { name = "fake-bpy-module", specifier = ">=20251003" },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "ruff", specifier = ">=0.14.10" },

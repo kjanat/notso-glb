@@ -55,11 +55,47 @@ Usage:
 """
 
 import os
+from typing import Literal, cast
 
-from notso_glb._bpy import bpy
+import bpy  # type: ignore[import-untyped]
+from bpy.types import (
+    Armature,
+    Mesh,
+    Modifier,
+    Object,
+    Scene,
+    ShaderNodeUVMap,
+    ViewLayer,
+)
 
 
-def clean_vertex_groups():
+def _get_scene() -> Scene:
+    """Get the current scene, raising if None."""
+    scene = bpy.context.scene
+    if scene is None:
+        raise RuntimeError("No active scene")
+    return scene
+
+
+def _get_view_layer() -> ViewLayer:
+    """Get the current view layer, raising if None."""
+    view_layer = bpy.context.view_layer
+    if view_layer is None:
+        raise RuntimeError("No active view layer")
+    return view_layer
+
+
+def _get_mesh_data(obj: Object) -> Mesh:
+    """Get mesh data from an object, assuming obj.type == 'MESH'."""
+    return cast(Mesh, obj.data)
+
+
+def _get_armature_data(obj: Object) -> Armature:
+    """Get armature data from an object, assuming obj.type == 'ARMATURE'."""
+    return cast(Armature, obj.data)
+
+
+def clean_vertex_groups() -> int:
     """Remove vertex groups with no weights (empty bone references)"""
     total_removed = 0
 
@@ -67,8 +103,8 @@ def clean_vertex_groups():
         if obj.type != "MESH" or len(obj.vertex_groups) == 0:
             continue
 
-        mesh = obj.data
-        used_groups = set()
+        mesh = _get_mesh_data(obj)
+        used_groups: set[int] = set()
 
         for v in mesh.vertices:
             for g in v.groups:
@@ -88,21 +124,23 @@ def clean_vertex_groups():
     return total_removed
 
 
-def analyze_bone_animation():
+def analyze_bone_animation() -> set[str]:
     """Find bones that never animate across all actions"""
-    armature = None
+    armature: Object | None = None
     for obj in bpy.data.objects:
         if obj.type == "ARMATURE":
             armature = obj
             break
 
-    if not armature or not armature.animation_data:
+    if not armature or not armature.animation_data or not armature.pose:
         return set()
 
+    scene = _get_scene()
+    view_layer = _get_view_layer()
     bone_movement = {b.name: 0.0 for b in armature.pose.bones}
 
     orig_action = armature.animation_data.action
-    orig_frame = bpy.context.scene.frame_current
+    orig_frame = scene.frame_current
 
     for action in bpy.data.actions:
         armature.animation_data.action = action
@@ -110,37 +148,31 @@ def analyze_bone_animation():
         frame_end = int(action.frame_range[1])
 
         for bone in armature.pose.bones:
-            bpy.context.scene.frame_set(frame_start)
-            bpy.context.view_layer.update()
+            scene.frame_set(frame_start)
+            view_layer.update()
             start_loc = bone.location.copy()
-            start_rot = (
-                bone.rotation_quaternion.copy()
-                if bone.rotation_mode == "QUATERNION"
-                else bone.rotation_euler.copy()
-            )
+            start_rot_q = bone.rotation_quaternion.copy()
+            start_rot_e = bone.rotation_euler.copy()
 
-            bpy.context.scene.frame_set(frame_end)
-            bpy.context.view_layer.update()
+            scene.frame_set(frame_end)
+            view_layer.update()
             end_loc = bone.location.copy()
-            end_rot = (
-                bone.rotation_quaternion.copy()
-                if bone.rotation_mode == "QUATERNION"
-                else bone.rotation_euler.copy()
-            )
+            end_rot_q = bone.rotation_quaternion.copy()
+            end_rot_e = bone.rotation_euler.copy()
 
-            loc_diff = (end_loc - start_loc).length
+            loc_diff = (end_loc - start_loc).length  # ty: ignore[unsupported-operator]
             if bone.rotation_mode == "QUATERNION":
-                rot_diff = (end_rot - start_rot).magnitude
+                rot_diff = (end_rot_q - start_rot_q).magnitude  # ty: ignore[unsupported-operator]
             else:
                 rot_diff = (
-                    end_rot.to_quaternion() - start_rot.to_quaternion()
-                ).magnitude
+                    end_rot_e.to_quaternion() - start_rot_e.to_quaternion()
+                ).magnitude  # ty: ignore[unsupported-operator]
 
             bone_movement[bone.name] += loc_diff + rot_diff
 
     if orig_action:
         armature.animation_data.action = orig_action
-    bpy.context.scene.frame_set(orig_frame)
+    scene.frame_set(orig_frame)
 
     return {name for name, movement in bone_movement.items() if movement < 0.01}
 
@@ -165,9 +197,9 @@ def get_bones_used_for_skinning():
     return used_bones
 
 
-def mark_static_bones_non_deform(static_bones):
+def mark_static_bones_non_deform(static_bones: set[str]) -> tuple[int, int]:
     """Mark static bones as non-deform, but KEEP bones used for skinning"""
-    armature = None
+    armature: Object | None = None
     for obj in bpy.data.objects:
         if obj.type == "ARMATURE":
             armature = obj
@@ -181,9 +213,10 @@ def mark_static_bones_non_deform(static_bones):
     safe_to_mark = static_bones - skinning_bones
     skipped = len(static_bones & skinning_bones)
 
+    arm_data = _get_armature_data(armature)
     marked = 0
     for bone_name in safe_to_mark:
-        bone = armature.data.bones.get(bone_name)
+        bone = arm_data.bones.get(bone_name)
         if not bone or not bone.use_deform:
             continue
         bone.use_deform = False
@@ -272,13 +305,13 @@ def resize_textures(max_size=1024, force_pot=False):
     return resized
 
 
-def get_scene_stats():
+def get_scene_stats() -> dict[str, int]:
     """Get current scene statistics"""
     meshes = [o for o in bpy.data.objects if o.type == "MESH"]
     armatures = [o for o in bpy.data.objects if o.type == "ARMATURE"]
 
-    total_verts = sum(len(o.data.vertices) for o in meshes)
-    total_bones = sum(len(a.data.bones) for a in armatures)
+    total_verts = sum(len(_get_mesh_data(o).vertices) for o in meshes)
+    total_bones = sum(len(_get_armature_data(a).bones) for a in armatures)
     total_actions = len(bpy.data.actions)
 
     return {
@@ -291,7 +324,7 @@ def get_scene_stats():
 
 def count_mesh_islands(obj):
     """Count disconnected mesh parts (islands) using BFS"""
-    from notso_glb._bpy import bmesh
+    import bmesh  # type: ignore[import-untyped]
 
     bm = bmesh.new()
     bm.from_mesh(obj.data)
@@ -329,7 +362,7 @@ BLOAT_THRESHOLDS = {
 }
 
 
-def cleanup_mesh_bmesh(obj):
+def cleanup_mesh_bmesh(obj: Object) -> dict[str, int] | None:
     """
     Clean up mesh using bmesh operations:
     - Remove duplicate vertices (doubles)
@@ -338,15 +371,16 @@ def cleanup_mesh_bmesh(obj):
 
     Returns dict with cleanup stats or None if failed.
     """
-    from notso_glb._bpy import bmesh
+    import bmesh  # type: ignore[import-untyped]
 
-    original_verts = len(obj.data.vertices)
-    original_faces = len(obj.data.polygons)
+    mesh = _get_mesh_data(obj)
+    original_verts = len(mesh.vertices)
+    original_faces = len(mesh.polygons)
 
     bm = bmesh.new()
-    bm.from_mesh(obj.data)
+    bm.from_mesh(mesh)
 
-    stats = {
+    stats: dict[str, int] = {
         "doubles_merged": 0,
         "degenerate_dissolved": 0,
         "loose_removed": 0,
@@ -356,7 +390,7 @@ def cleanup_mesh_bmesh(obj):
     # Note: remove_doubles modifies in-place, returns None
     merge_dist = 0.0001  # 0.1mm threshold
     verts_before_doubles = len(bm.verts)
-    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=merge_dist)
+    bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=merge_dist)  # ty: ignore[invalid-argument-type]
     stats["doubles_merged"] = verts_before_doubles - len(bm.verts)
 
     # 2. Dissolve degenerate geometry
@@ -379,14 +413,14 @@ def cleanup_mesh_bmesh(obj):
         stats["loose_removed"] = len(loose_verts)
 
     # Write back to mesh
-    bm.to_mesh(obj.data)
+    bm.to_mesh(mesh)
     bm.free()
 
     # Update mesh
-    obj.data.update()
+    mesh.update()
 
-    new_verts = len(obj.data.vertices)
-    new_faces = len(obj.data.polygons)
+    new_verts = len(mesh.vertices)
+    new_faces = len(mesh.polygons)
 
     stats["verts_before"] = original_verts
     stats["verts_after"] = new_verts
@@ -396,32 +430,123 @@ def cleanup_mesh_bmesh(obj):
     return stats
 
 
-def decimate_mesh(obj, target_verts):
+type ObjectModifierTypeItems = Literal[
+    "GREASE_PENCIL_VERTEX_WEIGHT_PROXIMITY",  # Vertex Weight Proximity.Generate vertex weights based on distance to object.
+    "DATA_TRANSFER",  # Data Transfer.Transfer several types of data (vertex groups, UV maps, vertex colors, custom normals) from one mesh to another.
+    "MESH_CACHE",  # Mesh Cache.Deform the mesh using an external frame-by-frame vertex transform cache.
+    "MESH_SEQUENCE_CACHE",  # Mesh Sequence Cache.Deform the mesh or curve using an external mesh cache in Alembic format.
+    "NORMAL_EDIT",  # Normal Edit.Modify the direction of the surface normals.
+    "WEIGHTED_NORMAL",  # Weighted Normal.Modify the direction of the surface normals using a weighting method.
+    "UV_PROJECT",  # UV Project.Project the UV map coordinates from the negative Z axis of another object.
+    "UV_WARP",  # UV Warp.Transform the UV map using the difference between two objects.
+    "VERTEX_WEIGHT_EDIT",  # Vertex Weight Edit.Modify of the weights of a vertex group.
+    "VERTEX_WEIGHT_MIX",  # Vertex Weight Mix.Mix the weights of two vertex groups.
+    "VERTEX_WEIGHT_PROXIMITY",  # Vertex Weight Proximity.Set the vertex group weights based on the distance to another target object.
+    "GREASE_PENCIL_COLOR",  # Hue/Saturation.Change hue/saturation/value of the strokes.
+    "GREASE_PENCIL_TINT",  # Tint.Tint the color of the strokes.
+    "GREASE_PENCIL_OPACITY",  # Opacity.Change the opacity of the strokes.
+    "GREASE_PENCIL_VERTEX_WEIGHT_ANGLE",  # Vertex Weight Angle.Generate vertex weights based on stroke angle.
+    "GREASE_PENCIL_TIME",  # Time Offset.Offset keyframes.
+    "GREASE_PENCIL_TEXTURE",  # Texture Mapping.Change stroke UV texture values.
+    "ARRAY",  # Array.Create copies of the shape with offsets.
+    "BEVEL",  # Bevel.Generate sloped corners by adding geometry to the mesh's edges or vertices.
+    "BOOLEAN",  # Boolean.Use another shape to cut, combine or perform a difference operation.
+    "BUILD",  # Build.Cause the faces of the mesh object to appear or disappear one after the other over time.
+    "DECIMATE",  # Decimate.Reduce the geometry density.
+    "EDGE_SPLIT",  # Edge Split.Split away joined faces at the edges.
+    "NODES",  # Geometry Nodes.
+    "MASK",  # Mask.Dynamically hide vertices based on a vertex group or armature.
+    "MIRROR",  # Mirror.Mirror along the local X, Y and/or Z axes, over the object origin.
+    "MESH_TO_VOLUME",  # Mesh to Volume.
+    "MULTIRES",  # Multiresolution.Subdivide the mesh in a way that allows editing the higher subdivision levels.
+    "REMESH",  # Remesh.Generate new mesh topology based on the current shape.
+    "SCREW",  # Screw.Lathe around an axis, treating the input mesh as a profile.
+    "SKIN",  # Skin.Create a solid shape from vertices and edges, using the vertex radius to define the thickness.
+    "SOLIDIFY",  # Solidify.Make the surface thick.
+    "SUBSURF",  # Subdivision Surface.Split the faces into smaller parts, giving it a smoother appearance.
+    "TRIANGULATE",  # Triangulate.Convert all polygons to triangles.
+    "VOLUME_TO_MESH",  # Volume to Mesh.
+    "WELD",  # Weld.Find groups of vertices closer than dist and merge them together.
+    "WIREFRAME",  # Wireframe.Convert faces into thickened edges.
+    "GREASE_PENCIL_ARRAY",  # Array.Duplicate strokes into an array.
+    "GREASE_PENCIL_BUILD",  # Build.Grease Pencil build modifier.
+    "GREASE_PENCIL_LENGTH",  # Length.Grease Pencil length modifier.
+    "LINEART",  # Line Art.Generate Line Art from scene geometries.
+    "GREASE_PENCIL_MIRROR",  # Mirror.Duplicate strokes like a mirror.
+    "GREASE_PENCIL_MULTIPLY",  # Multiple Strokes.Generate multiple strokes around original strokes.
+    "GREASE_PENCIL_SIMPLIFY",  # Simplify.Simplify stroke reducing number of points.
+    "GREASE_PENCIL_SUBDIV",  # Subdivide.Grease Pencil subdivide modifier.
+    "GREASE_PENCIL_ENVELOPE",  # Envelope.Create an envelope shape.
+    "GREASE_PENCIL_OUTLINE",  # Outline.Convert stroke to outline.
+    "ARMATURE",  # Armature.Deform the shape using an armature object.
+    "CAST",  # Cast.Shift the shape towards a predefined primitive.
+    "CURVE",  # Curve.Bend the mesh using a curve object.
+    "DISPLACE",  # Displace.Offset vertices based on a texture.
+    "HOOK",  # Hook.Deform specific points using another object.
+    "LAPLACIANDEFORM",  # Laplacian Deform.Deform based a series of anchor points.
+    "LATTICE",  # Lattice.Deform using the shape of a lattice object.
+    "MESH_DEFORM",  # Mesh Deform.Deform using a different mesh, which acts as a deformation cage.
+    "SHRINKWRAP",  # Shrinkwrap.Project the shape onto another object.
+    "SIMPLE_DEFORM",  # Simple Deform.Deform the shape by twisting, bending, tapering or stretching.
+    "SMOOTH",  # Smooth.Smooth the mesh by flattening the angles between adjacent faces.
+    "CORRECTIVE_SMOOTH",  # Smooth Corrective.Smooth the mesh while still preserving the volume.
+    "LAPLACIANSMOOTH",  # Smooth Laplacian.Reduce the noise on a mesh surface with minimal changes to its shape.
+    "SURFACE_DEFORM",  # Surface Deform.Transfer motion from another mesh.
+    "WARP",  # Warp.Warp parts of a mesh to a new location in a very flexible way thanks to 2 specified objects.
+    "WAVE",  # Wave.Adds a ripple-like motion to an object's geometry.
+    "VOLUME_DISPLACE",  # Volume Displace.Deform volume based on noise or other vector fields.
+    "GREASE_PENCIL_HOOK",  # Hook.Deform stroke points using objects.
+    "GREASE_PENCIL_NOISE",  # Noise.Generate noise wobble in Grease Pencil strokes.
+    "GREASE_PENCIL_OFFSET",  # Offset.Change stroke location, rotation, or scale.
+    "GREASE_PENCIL_SMOOTH",  # Smooth.Smooth Grease Pencil strokes.
+    "GREASE_PENCIL_THICKNESS",  # Thickness.Change stroke thickness.
+    "GREASE_PENCIL_LATTICE",  # Lattice.Deform strokes using a lattice object.
+    "GREASE_PENCIL_DASH",  # Dot Dash.Generate dot-dash styled strokes.
+    "GREASE_PENCIL_ARMATURE",  # Armature.Deform stroke points using armature object.
+    "GREASE_PENCIL_SHRINKWRAP",  # Shrinkwrap.Project the shape onto another object.
+    "CLOTH",  # Cloth.Physic simulation for cloth.
+    "COLLISION",  # Collision.For colliders participating in physics simulation, control which level in the modifier stack is used as the collision surface.
+    "DYNAMIC_PAINT",  # Dynamic Paint.Turn objects into paint canvases and brushes, creating color attributes, image sequences, or displacement.
+    "EXPLODE",  # Explode.Break apart the mesh faces and let them follow particles.
+    "FLUID",  # Fluid.Physics simulation for fluids, like water, oil and smoke.
+    "OCEAN",  # Ocean.Generate a moving ocean surface.
+    "PARTICLE_INSTANCE",  # Particle Instance.Duplicate mesh at the location of particles.
+    "PARTICLE_SYSTEM",  # Particle System.Spawn particles from the shape.
+    "SOFT_BODY",  # Soft Body.Simulate soft deformable objects.
+    "SURFACE",  # Surface.
+]
+
+
+def decimate_mesh(obj: Object, target_verts: int) -> tuple[int, int] | None:
     """
     Apply decimation to reduce mesh to approximately target vertex count.
 
     Returns (original_verts, new_verts) or None if failed.
     """
-    original_verts = len(obj.data.vertices)
+    mesh = _get_mesh_data(obj)
+    original_verts = len(mesh.vertices)
     if original_verts <= target_verts:
         return None
 
     # Calculate ratio needed
-    ratio = target_verts / original_verts
+    ratio: int | float = target_verts / original_verts
 
     # Add decimate modifier
-    mod = obj.modifiers.new(name="AutoDecimate", type="DECIMATE")
-    mod.decimate_type = "COLLAPSE"
-    mod.ratio = ratio
-    mod.use_collapse_triangulate = True
+    # Blender API: type is a string like "DECIMATE"
+    mod: Modifier = obj.modifiers.new(name="AutoDecimate", type="DECIMATE")
+    # These attributes exist specifically on Decimate modifiers
+    mod.decimate_type = Literal["COLLAPSE"]  # ty:ignore[unresolved-attribute]
+    mod.ratio = ratio  # ty:ignore[unresolved-attribute]
+    mod.use_collapse_triangulate = Literal[True]  # ty:ignore[unresolved-attribute]
 
     # Apply modifier
-    bpy.context.view_layer.objects.active = obj
+    view_layer = _get_view_layer()
+    view_layer.objects.active = obj  # type: ignore[assignment]
     try:
         bpy.ops.object.modifier_apply(modifier=mod.name)
-        new_verts = len(obj.data.vertices)
+        new_verts = len(mesh.vertices)
         return (original_verts, new_verts)
-    except Exception as e:
+    except Exception as e:  # pragma: no cover - defensive
         # Remove modifier if apply failed
         obj.modifiers.remove(mod)
         print(f"    [WARN] Failed to decimate {obj.name}: {e}")
@@ -448,7 +573,8 @@ def auto_fix_bloat(warnings):
         if obj.type != "MESH":
             continue
 
-        verts_before = len(obj.data.vertices)
+        mesh = _get_mesh_data(obj)
+        verts_before = len(mesh.vertices)
         if verts_before < 10:  # Skip tiny meshes
             continue
 
@@ -487,7 +613,8 @@ def auto_fix_bloat(warnings):
             continue
 
         # Check if cleanup already brought it under threshold
-        current_verts = len(obj.data.vertices)
+        mesh = _get_mesh_data(obj)
+        current_verts = len(mesh.vertices)
         if current_verts <= BLOAT_THRESHOLDS["prop_critical"]:
             continue
 
@@ -523,7 +650,7 @@ def sanitize_gltf_name(name):
     return sanitized
 
 
-def analyze_skinned_mesh_parents():
+def analyze_skinned_mesh_parents() -> list[dict[str, object]]:
     """
     Detect skinned meshes that are not at scene root.
 
@@ -532,7 +659,7 @@ def analyze_skinned_mesh_parents():
 
     Returns list of warnings for each non-root skinned mesh.
     """
-    warnings = []
+    warnings: list[dict[str, object]] = []
 
     for obj in bpy.data.objects:
         if obj.type != "MESH":
@@ -544,9 +671,9 @@ def analyze_skinned_mesh_parents():
             continue
 
         # Check if it has a parent (not at root)
-        if obj.parent is not None:
+        parent = cast(Object | None, obj.parent)
+        if parent is not None:
             # Check if parent has non-identity transform
-            parent = obj.parent
             has_transform = (
                 parent.location.length > 0.0001
                 or parent.rotation_euler.x != 0
@@ -567,31 +694,36 @@ def analyze_skinned_mesh_parents():
     return warnings
 
 
-def analyze_unused_uv_maps():
+def analyze_unused_uv_maps() -> list[dict[str, object]]:
     """
     Detect UV maps that aren't used by any material.
 
     Unused TEXCOORD attributes bloat the glTF file.
     Returns list of meshes with unused UV maps.
     """
-    warnings = []
+    warnings: list[dict[str, object]] = []
 
     for obj in bpy.data.objects:
         if obj.type != "MESH":
             continue
 
-        mesh = obj.data
+        mesh = _get_mesh_data(obj)
         if not mesh.uv_layers:
             continue
 
         # Get UV maps used by materials
-        used_uvs = set()
+        used_uvs: set[str] = set()
         for mat_slot in obj.material_slots:
             if not mat_slot.material or not mat_slot.material.use_nodes:
                 continue
-            for node in mat_slot.material.node_tree.nodes:
-                if node.type == "UVMAP" and node.uv_map:
-                    used_uvs.add(node.uv_map)
+            node_tree = mat_slot.material.node_tree
+            if node_tree is None:
+                continue
+            for node in node_tree.nodes:
+                if node.type == "UVMAP":
+                    uv_node = cast(ShaderNodeUVMap, node)
+                    if uv_node.uv_map:
+                        used_uvs.add(uv_node.uv_map)
                 # Image textures default to first UV if no explicit UV node
                 if node.type == "TEX_IMAGE":
                     if not used_uvs and mesh.uv_layers:
@@ -613,17 +745,19 @@ def analyze_unused_uv_maps():
     return warnings
 
 
-def remove_unused_uv_maps(warnings):
+def remove_unused_uv_maps(warnings: list[dict[str, object]]) -> int:
     """Remove unused UV maps detected by analyze_unused_uv_maps."""
     removed = 0
 
     for warn in warnings:
-        obj = bpy.data.objects.get(warn["mesh"])
+        mesh_name = cast(str, warn["mesh"])
+        obj = bpy.data.objects.get(mesh_name)
         if not obj or obj.type != "MESH":
             continue
 
-        mesh = obj.data
-        for uv_name in warn["unused_uvs"]:
+        mesh = _get_mesh_data(obj)
+        uv_names = cast(list[str], warn["unused_uvs"])
+        for uv_name in uv_names:
             uv_layer = mesh.uv_layers.get(uv_name)
             if uv_layer:
                 mesh.uv_layers.remove(uv_layer)
@@ -793,7 +927,7 @@ def auto_fix_duplicate_names(duplicates):
     return renames
 
 
-def analyze_mesh_bloat():
+def analyze_mesh_bloat() -> list[dict[str, object]]:
     """
     Detect unreasonably complex meshes for web delivery.
 
@@ -802,14 +936,14 @@ def analyze_mesh_bloat():
     - WARNING: Should review, likely bloated
     - INFO: Notable but may be intentional
     """
-    warnings = []
+    warnings: list[dict[str, object]] = []
 
     total_verts = 0
     for obj in bpy.data.objects:
         if obj.type != "MESH":
             continue
 
-        mesh = obj.data
+        mesh = _get_mesh_data(obj)
         verts = len(mesh.vertices)
         total_verts += verts
 
@@ -1053,7 +1187,9 @@ def optimize_and_export(
     unused_uv_warnings = analyze_unused_uv_maps()
 
     if unused_uv_warnings:
-        total_unused = sum(len(w["unused_uvs"]) for w in unused_uv_warnings)
+        total_unused = sum(
+            len(cast(list[str], w["unused_uvs"])) for w in unused_uv_warnings
+        )
         print(f"\n{'-' * 60}")
         print(
             f"  UNUSED UV MAPS: {total_unused} found in {len(unused_uv_warnings)} mesh(es)"
@@ -1061,8 +1197,10 @@ def optimize_and_export(
         print(f"{'-' * 60}")
 
         for w in unused_uv_warnings:
+            unused_uvs = cast(list[str], w["unused_uvs"])
+            total_uvs = cast(int, w["total_uvs"])
             print(
-                f"  {w['mesh']}: {w['unused_uvs']} (keeping {w['total_uvs'] - len(w['unused_uvs'])})"
+                f"  {w['mesh']}: {unused_uvs} (keeping {total_uvs - len(unused_uvs)})"
             )
 
         if experimental_autofix:

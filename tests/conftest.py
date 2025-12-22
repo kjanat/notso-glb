@@ -6,8 +6,24 @@ Uses real bpy module (Blender as Python module).
 
 from __future__ import annotations
 
-from notso_glb._bpy import bpy
+from typing import cast
+
+import bpy  # type: ignore[import-untyped]
 import pytest
+from bpy.types import Image, Mesh, Object
+
+
+def _active_object() -> Object:
+    """Get the active object, raising if None."""
+    obj = bpy.context.active_object
+    if obj is None:
+        raise RuntimeError("No active object")
+    return obj
+
+
+def _get_mesh_data(obj: Object) -> Mesh:
+    """Get mesh data from an object, assuming obj.type == 'MESH'."""
+    return cast(Mesh, obj.data)
 
 
 @pytest.fixture(autouse=True)
@@ -17,17 +33,17 @@ def reset_blender_scene() -> None:
 
 
 @pytest.fixture
-def cube_mesh() -> bpy.types.Object:
+def cube_mesh() -> Object:
     """Create a simple cube mesh object."""
     bpy.ops.mesh.primitive_cube_add()
-    return bpy.context.active_object
+    return _active_object()
 
 
 @pytest.fixture
-def high_poly_mesh() -> bpy.types.Object:
+def high_poly_mesh() -> Object:
     """Create a high-poly mesh (subdivided cube) for bloat testing."""
     bpy.ops.mesh.primitive_cube_add()
-    obj = bpy.context.active_object
+    obj = _active_object()
     # Subdivide to increase vertex count
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.subdivide(number_cuts=5)
@@ -36,10 +52,10 @@ def high_poly_mesh() -> bpy.types.Object:
 
 
 @pytest.fixture
-def armature_with_bones() -> bpy.types.Object:
+def armature_with_bones() -> Object:
     """Create an armature with multiple bones."""
     bpy.ops.object.armature_add()
-    arm_obj = bpy.context.active_object
+    arm_obj = _active_object()
 
     bpy.ops.object.mode_set(mode="EDIT")
     # Add more bones
@@ -51,15 +67,15 @@ def armature_with_bones() -> bpy.types.Object:
 
 
 @pytest.fixture
-def skinned_mesh(
-    cube_mesh: bpy.types.Object, armature_with_bones: bpy.types.Object
-) -> bpy.types.Object:
+def skinned_mesh(cube_mesh: Object, armature_with_bones: Object) -> Object:
     """Create a mesh skinned to an armature."""
     # Select cube, then armature
     bpy.ops.object.select_all(action="DESELECT")
     cube_mesh.select_set(True)
     armature_with_bones.select_set(True)
-    bpy.context.view_layer.objects.active = armature_with_bones
+    view_layer = bpy.context.view_layer
+    if view_layer is not None:
+        view_layer.objects.active = armature_with_bones
 
     # Parent with automatic weights
     bpy.ops.object.parent_set(type="ARMATURE_AUTO")
@@ -68,9 +84,9 @@ def skinned_mesh(
 
 
 @pytest.fixture
-def mesh_with_uv_layers(cube_mesh: bpy.types.Object) -> bpy.types.Object:
+def mesh_with_uv_layers(cube_mesh: Object) -> Object:
     """Create a mesh with multiple UV layers."""
-    mesh = cube_mesh.data
+    mesh = _get_mesh_data(cube_mesh)
     # First UV layer already exists from primitive
     if not mesh.uv_layers:
         mesh.uv_layers.new(name="UVMap")
@@ -80,16 +96,16 @@ def mesh_with_uv_layers(cube_mesh: bpy.types.Object) -> bpy.types.Object:
 
 
 @pytest.fixture
-def bone_shape_object() -> bpy.types.Object:
+def bone_shape_object() -> Object:
     """Create an object that looks like a bone shape widget."""
     bpy.ops.mesh.primitive_ico_sphere_add()
-    obj = bpy.context.active_object
+    obj = _active_object()
     obj.name = "WGT_bone_shape"
     return obj
 
 
 @pytest.fixture
-def large_texture() -> bpy.types.Image:
+def large_texture() -> Image:
     """Create a large texture for resize testing."""
     img = bpy.data.images.new("LargeTexture", width=2048, height=2048)
     return img
