@@ -2,13 +2,31 @@
 
 > Cleans up Blender files and exports optimized GLB for web delivery.
 
-```sh
-uvx --python 3.11 --from git+https://github.com/kjanat/notso-glb.git notso-glb --help
+```bash
+uvx --python 3.11 \
+  --from git+https://github.com/kjanat/notso-glb \
+  notso-glb [OPTIONS] FILE
 ```
 
 <p align="center">
-  <img alt="Screenshot with cli options" width="100%" src="https://raw.githubusercontent.com/kjanat/notso-glb/refs/heads/master/screenshot.webp">
+  <a href="https://github.com/kjanat/notso-glb/blob/master/CLI.md" target="_blank" rel="noopener" title="View CLI Options">
+    <img alt="Screenshot with cli options" width="100%" src="https://raw.githubusercontent.com/kjanat/notso-glb/refs/heads/master/screenshot.webp">
+  </a>
 </p>
+
+## Install
+
+```bash
+uv tool install git+https://github.com/kjanat/notso-glb
+```
+
+then just run `notso-glb` from the command line.
+
+### Upgrade
+
+```bash
+uv tool upgrade notso-glb
+```
 
 ## Features
 
@@ -39,34 +57,7 @@ Experimental Auto-fix (`--experimental-autofix`):
 
 ## Usage
 
-```text
-Blender UI:
-    Open in Text Editor and Run Script (uses CONFIG dict below)
-
-Blender CLI with .blend:
-    blender model.blend --background --python glb_export_optimizer.py
-
-Blender CLI with .glb/.gltf:
-    blender --background --python glb_export_optimizer.py -- model.glb
-    blender --background --python glb_export_optimizer.py -- model.glb -o output.glb
-
-Direct CLI execution (with uv):
-    ./glb_export_optimizer.py model.glb -o output.glb
-    ./glb_export_optimizer.py model.glb --format gltf-embedded # which exports .gltf
-    ./glb_export_optimizer.py model.gltf --no-draco --max-texture 2048
-
-CLI options (blender: after --):
-    input                       Input file (.blend, .glb, .gltf)
-    -o, --output                Output path (default: input_optimized.[glb|gltf])
-    -f, --format                Output format: glb (default), gltf, gltf-embedded
-    --no-draco                  Disable Draco mesh compression
-    --no-webp                   Keep original texture format
-    --max-texture N             Max texture dimension in px (default: 1024, 0=no resize)
-    --force-pot                 Force power-of-two texture dimensions
-    --skip-animation-analysis   Skip static bone detection (faster)
-    --skip-bloat-check          Skip mesh complexity analysis
-    --autofix                   Auto-fix bloated props, unused UVs, duplicates
-```
+See [CLI.md](CLI.md)
 
 ## Requirements
 

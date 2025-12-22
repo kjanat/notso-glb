@@ -4,6 +4,7 @@ import bpy  # type: ignore[import-untyped]
 from bpy.types import Object
 
 from notso_glb.utils import get_scene, get_view_layer
+from notso_glb.utils.logging import log_debug
 
 
 def get_bones_used_for_skinning() -> set[str]:
@@ -40,11 +41,16 @@ def analyze_bone_animation() -> set[str]:
             break
 
     if not armature or not armature.animation_data or not armature.pose:
+        log_debug("No armature with animation data found")
         return set()
 
     scene = get_scene()
     view_layer = get_view_layer()
     bone_movement: dict[str, float] = {b.name: 0.0 for b in armature.pose.bones}
+    num_bones = len(armature.pose.bones)
+    num_actions = len(bpy.data.actions)
+
+    log_debug(f"Analyzing {num_bones} bones across {num_actions} actions")
 
     orig_action = armature.animation_data.action
     orig_frame = scene.frame_current

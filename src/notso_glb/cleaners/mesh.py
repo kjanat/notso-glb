@@ -7,6 +7,7 @@ from bpy.types import Modifier, Object
 
 from notso_glb.utils import get_mesh_data, get_view_layer
 from notso_glb.utils.constants import BLOAT_THRESHOLDS
+from notso_glb.utils.logging import log_warn
 
 
 def cleanup_mesh_bmesh(obj: Object) -> dict[str, int] | None:
@@ -99,7 +100,7 @@ def decimate_mesh(obj: Object, target_verts: int) -> tuple[int, int] | None:
         return (original_verts, new_verts)
     except Exception as e:  # pragma: no cover - defensive
         obj.modifiers.remove(mod)
-        print(f"    [WARN] Failed to decimate {obj.name}: {e}")
+        log_warn(f"Failed to decimate {obj.name}: {e}")
         return None
 
 
@@ -145,7 +146,7 @@ def auto_fix_bloat(
                     "verts_saved": stats["verts_before"] - stats["verts_after"],
                 })
         except Exception as e:
-            print(f"    [WARN] Cleanup failed for {obj.name}: {e}")
+            log_warn(f"Cleanup failed for {obj.name}: {e}")
 
     # Phase 2: Decimate bloated props
     bloated_objects = [

@@ -1,5 +1,6 @@
 """Constants and thresholds for GLB optimization."""
 
+from pathlib import Path
 from typing import TypedDict
 
 # Bloat detection thresholds for web mascots
@@ -15,7 +16,7 @@ BLOAT_THRESHOLDS: dict[str, int] = {
 class OptimizationConfig(TypedDict):
     """Configuration for GLB optimization."""
 
-    output_path: str | None
+    output_path: Path | None
     use_draco: bool
     use_webp: bool
     max_texture_size: int
@@ -23,6 +24,7 @@ class OptimizationConfig(TypedDict):
     analyze_animations: bool
     check_bloat: bool
     experimental_autofix: bool
+    quiet: bool
 
 
 # Default configuration for optimization
@@ -35,4 +37,5 @@ DEFAULT_CONFIG: OptimizationConfig = {
     "analyze_animations": True,  # Find static bones (slow but saves MB)
     "check_bloat": True,  # Detect unreasonable mesh complexity
     "experimental_autofix": False,  # [EXPERIMENTAL] Auto-decimate props
+    "quiet": False,  # Minimize console output
 }

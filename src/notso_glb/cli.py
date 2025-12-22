@@ -45,10 +45,10 @@ class ExportFormat(Enum):
 @app.command()
 def optimize(
     input_path: Annotated[
-        str,
+        Path,
         typer.Argument(
             help="Input file ([bold green].blend[/], [bold green].glb[/], or [bold green].gltf[/])",
-            metavar="INPUT",
+            metavar="FILE",
         ),
     ],
     output: Annotated[
@@ -59,7 +59,7 @@ def optimize(
             help="Output path (default: [italic]input_optimized.\\[glb|gltf][/])",
             rich_help_panel="Core Options",
         ),
-    ] = None,
+    ] = DEFAULT_CONFIG["output_path"],
     export_format: Annotated[
         ExportFormat,
         typer.Option(
@@ -76,7 +76,7 @@ def optimize(
             help="Enable/Disable Draco compression",
             rich_help_panel="Compression & Textures",
         ),
-    ] = True,
+    ] = DEFAULT_CONFIG["use_draco"],
     use_webp: Annotated[
         bool,
         typer.Option(
@@ -84,14 +84,15 @@ def optimize(
             help="Enable/Disable WebP textures",
             rich_help_panel="Compression & Textures",
         ),
-    ] = True,
+    ] = DEFAULT_CONFIG["use_webp"],
     max_texture_size: Annotated[
         int,
         typer.Option(
             help="Max texture size (0=no resize)",
             rich_help_panel="Compression & Textures",
+            metavar="PIXELS",
         ),
-    ] = 1024,
+    ] = DEFAULT_CONFIG["max_texture_size"],
     force_pot: Annotated[
         bool,
         typer.Option(
@@ -99,7 +100,7 @@ def optimize(
             help="Force power-of-two texture dimensions (better GPU compatibility)",
             rich_help_panel="Compression & Textures",
         ),
-    ] = False,
+    ] = DEFAULT_CONFIG["force_pot_textures"],
     analyze_animations: Annotated[
         bool,
         typer.Option(
@@ -107,7 +108,7 @@ def optimize(
             help="Analyze bones for static/animated properties",
             rich_help_panel="Analysis & Optimization",
         ),
-    ] = True,
+    ] = DEFAULT_CONFIG["analyze_animations"],
     check_bloat: Annotated[
         bool,
         typer.Option(
@@ -115,7 +116,7 @@ def optimize(
             help="Analyze meshes for unreasonable complexity",
             rich_help_panel="Analysis & Optimization",
         ),
-    ] = True,
+    ] = DEFAULT_CONFIG["check_bloat"],
     autofix: Annotated[
         bool,
         typer.Option(
@@ -123,12 +124,21 @@ def optimize(
             help="Auto-decimate bloated props, remove unused UVs",
             rich_help_panel="[bold red][EXPERIMENTAL][/]",
         ),
-    ] = False,
+    ] = DEFAULT_CONFIG["experimental_autofix"],
+    quiet: Annotated[
+        bool,
+        typer.Option(
+            "--quiet/--verbose",
+            "-q/-v",
+            help="Suppress Blender's verbose output (show only warnings/errors)",
+            rich_help_panel="Output",
+        ),
+    ] = DEFAULT_CONFIG["quiet"],
     version: Annotated[
         bool | None,
         typer.Option(
             "--version",
-            "-v",
+            "-V",
             callback=version_callback,
             is_eager=True,
             help="Show the version and exit.",
@@ -153,7 +163,7 @@ def optimize(
     # but if running standalone with bpy module, we might need to open it?)
     # For now, we assume if it's .glb/.gltf we import it.
     if ext in (".glb", ".gltf"):
-        import_gltf(abs_input_path)
+        import_gltf(abs_input_path, quiet=quiet)
     elif ext != ".blend":
         console.print(f"[bold red][ERROR][/] Unsupported format: {ext}")
         console.print("        Supported: .blend, .glb, .gltf")
@@ -176,12 +186,12 @@ def optimize(
     out_ext = ".gltf" if export_format.value.startswith("gltf") else ".glb"
 
     # Determine output path
-    final_output_path: str
+    final_output_path: Path
     if output is None:
         base = os.path.splitext(abs_input_path)[0]
-        final_output_path = f"{base}_optimized{out_ext}"
+        final_output_path = Path(f"{base}_optimized{out_ext}")
     else:
-        final_output_path = os.path.abspath(str(output))
+        final_output_path = output.resolve()
 
     # Run optimization
     result = optimize_and_export(
@@ -194,6 +204,7 @@ def optimize(
         analyze_animations=analyze_animations,
         check_bloat=check_bloat,
         experimental_autofix=autofix,
+        quiet=quiet,
     )
 
     if not result:

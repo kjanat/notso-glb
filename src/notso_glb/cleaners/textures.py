@@ -2,6 +2,8 @@
 
 import bpy  # type: ignore[import-untyped]
 
+from notso_glb.utils.logging import bright_cyan, dim, log_detail, log_warn, magenta
+
 
 def resize_textures(max_size: int = 1024, force_pot: bool = False) -> int:
     """
@@ -57,9 +59,11 @@ def resize_textures(max_size: int = 1024, force_pot: bool = False) -> int:
         try:
             img.scale(new_w, new_h)
             resized += 1
-            pot_note = " (POT)" if force_pot else ""
-            print(f"    Resized {img.name}: {w}x{h} -> {new_w}x{new_h}{pot_note}")
+            pot_note = f" {magenta('(POT)')}" if force_pot else ""
+            log_detail(
+                f"{img.name}: {dim(f'{w}x{h}')} -> {bright_cyan(f'{new_w}x{new_h}')}{pot_note}"
+            )
         except Exception as e:
-            print(f"    Failed to resize {img.name}: {e}")
+            log_warn(f"Failed to resize {img.name}: {e}")
 
     return resized
