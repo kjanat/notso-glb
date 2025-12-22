@@ -454,7 +454,7 @@ def _do_export(output_path: str, config: ExportConfig, use_draco: bool) -> None:
 
 def _try_export(output_path: str, config: ExportConfig, use_draco: bool) -> str | None:
     """Single export attempt. Returns path on success, None on failure."""
-    from notso_glb.utils.logging import filter_blender_output
+    from notso_glb.utils.logging import filter_blender_output, log_error
 
     try:
         if config.quiet:
@@ -463,7 +463,8 @@ def _try_export(output_path: str, config: ExportConfig, use_draco: bool) -> str 
         else:
             _do_export(output_path, config, use_draco)
         return output_path
-    except Exception:
+    except Exception as e:
+        log_error(f"Export exception: {e}")
         return None
 
 
@@ -588,10 +589,9 @@ def optimize_and_export(
     # Finalize timing
     step.finish()
 
-    # Report results
-    step.step("Export complete!")
-
+    # Report results based on success/failure
     if result_path and os.path.exists(result_path):
+        step.step("Export complete!")
         size = os.path.getsize(result_path)
         print(f"\n{cyan('=' * 60)}")
         print(f"  {bold('OUTPUT')}: {bright_green(os.path.basename(result_path))}")
@@ -606,6 +606,7 @@ def optimize_and_export(
 
         return result_path
     else:
+        step.step(f"{bright_red('Export FAILED')}")
         if result_path:  # Path was determined but file missing?
             log_warn("Output file not found at expected path")
         return None
