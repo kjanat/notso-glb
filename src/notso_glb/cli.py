@@ -266,9 +266,8 @@ def main() -> None:
                 sys.stdout = old_stdout
             sys.exit(1)
 
-        # Make 'optimize' the default command by prepending it
-        # This allows 'notso-glb input.glb' to map to 'notso-glb optimize input.glb'
-        args = ["optimize"] + args
+        # Single-command Typer apps automatically use the command as default
+        # No need to prepend 'optimize' - Typer handles this
         app(args=args, standalone_mode=True)
 
 
