@@ -277,25 +277,8 @@ def _clean_and_optimize(step: StepCounter, config: ExportConfig) -> None:
         step.step("Skipping texture resize")
 
 
-def _export_file(step: StepCounter, config: ExportConfig) -> str | None:
-    """Execute the final glTF export."""
-    output_path = config.output_path
-    if output_path is None:
-        blend_path = bpy.data.filepath
-        if blend_path:
-            base = os.path.splitext(blend_path)[0]
-            output_path = f"{base}_optimized.glb"
-        else:
-            output_path = os.path.join(os.getcwd(), "optimized_export.glb")
-
-    output_path = bpy.path.abspath(output_path)
-
-    step.step(f"Exporting to: {output_path}")
-    print(
-        f"      Format: {config.export_format}, "
-        f"Draco: {config.use_draco}, WebP: {config.use_webp}"
-    )
-
+def _try_export(output_path: str, config: ExportConfig, use_draco: bool) -> str | None:
+    """Single export attempt. Returns path on success, None on failure."""
     try:
         bpy.ops.export_scene.gltf(
             filepath=output_path,
@@ -313,7 +296,7 @@ def _export_file(step: StepCounter, config: ExportConfig) -> str | None:
             export_frame_step=1,
             export_skins=True,
             # Mesh compression (Draco)
-            export_draco_mesh_compression_enable=config.use_draco,
+            export_draco_mesh_compression_enable=use_draco,
             export_draco_mesh_compression_level=6,
             export_draco_position_quantization=14,
             export_draco_normal_quantization=10,
@@ -327,11 +310,46 @@ def _export_file(step: StepCounter, config: ExportConfig) -> str | None:
             export_materials="EXPORT",
             export_shared_accessors=True,
         )
-    except Exception as e:
-        print(f"\n[ERROR] Export failed: {e}")
+        return output_path
+    except Exception:
         return None
 
-    return output_path
+
+def _export_file(step: StepCounter, config: ExportConfig) -> str | None:
+    """Export with automatic Draco fallback on encoder crash."""
+    output_path = config.output_path
+    if output_path is None:
+        blend_path = bpy.data.filepath
+        if blend_path:
+            base = os.path.splitext(blend_path)[0]
+            output_path = f"{base}_optimized.glb"
+        else:
+            output_path = os.path.join(os.getcwd(), "optimized_export.glb")
+
+    output_path = bpy.path.abspath(output_path)
+    step.step(f"Exporting to: {output_path}")
+
+    if config.use_draco:
+        print(f"      Format: {config.export_format}, Draco: ON, WebP: {config.use_webp}")
+        result = _try_export(output_path, config, use_draco=True)
+        if result:
+            return result
+
+        # Draco crashed - fallback
+        print("      [WARN] Draco encoder crashed, retrying without compression...")
+        result = _try_export(output_path, config, use_draco=False)
+        if result:
+            print("      [OK] Exported without Draco")
+            return result
+
+        print("      [ERROR] Export failed")
+        return None
+
+    print(f"      Format: {config.export_format}, Draco: OFF, WebP: {config.use_webp}")
+    result = _try_export(output_path, config, use_draco=False)
+    if not result:
+        print("      [ERROR] Export failed")
+    return result
 
 
 def optimize_and_export(

@@ -34,7 +34,9 @@ def version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-class NeuralNetwork(Enum):
+class ExportFormat(Enum):
+    """Output format for glTF export."""
+
     glb = "glb"
     gltf = "gltf"
     gltf_embedded = "gltf-embedded"
@@ -54,19 +56,19 @@ def optimize(
         typer.Option(
             "--output",
             "-o",
-            help="Output path (default: [italic]input_optimized.\[glb|gltf][/])",
+            help="Output path (default: [italic]input_optimized.\\[glb|gltf][/])",
             rich_help_panel="Core Options",
         ),
     ] = None,
     export_format: Annotated[
-        NeuralNetwork,
+        ExportFormat,
         typer.Option(
             "--format",
             "-f",
             help="Output format",
             rich_help_panel="Core Options",
         ),
-    ] = NeuralNetwork["glb"],
+    ] = ExportFormat.glb,
     use_draco: Annotated[
         bool,
         typer.Option(
