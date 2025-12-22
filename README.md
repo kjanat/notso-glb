@@ -62,3 +62,19 @@ CLI options (blender: after --):
 
 - Blender 5.0+
 - Python 3.10+ (bundled with Blender)
+
+## Useful Links
+
+- [glTF 2.0 Specification]
+- [glTF 2.0 API Reference Guide]
+- [Khronos Resources]
+- [Blender 5.0 glTF 2.0]
+- [Blender 5.0 Python API Documentation]
+- [Blender 5.0 Reference Manual]
+
+[Khronos Resources]: https://github.khronos.org/
+[glTF 2.0 Specification]: https://www.khronos.org/gltf/#gltf-spec
+[glTF 2.0 API Reference Guide]: https://www.khronos.org/files/gltf20-reference-guide.pdf
+[Blender 5.0 Reference Manual]: https://docs.blender.org/manual/en/latest
+[Blender 5.0 glTF 2.0]: https://docs.blender.org/manual/en/5.0/addons/import_export/scene_gltf2.html
+[Blender 5.0 Python API Documentation]: https://docs.blender.org/api/current/index.html

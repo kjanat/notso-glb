@@ -9,6 +9,8 @@ requires-python = "==3.11.*"
 authors = [{ name = "Kaj Kowalski", email = "info@kajkowalski.nl" }]
 dependencies = [
   "bpy",
+  "rich>=14.2.0",
+  "typer>=0.20.1",
 ]
 
 [project.scripts]
@@ -28,9 +30,9 @@ requires = ["uv_build>=0.9.18,<0.10.0"]
 build-backend = "uv_build"
 
 [tool.pytest]
-strict = true
+addopts = ["--cov", "--import-mode=importlib", "-ra"]
 minversion = "9.0"
-addopts = ["-ra", "--cov", "--import-mode=importlib"]
+strict = true
 testpaths = ["tests"]
 
 [tool.ruff]
@@ -43,10 +45,8 @@ target-version = "py311"
 preview = true
 select = ["E4", "E7", "E9", "F", "F", "B", "UP"]
 ignore = []
-fixable = [
-  # Allow fix for all enabled rules (when `--fix`) is provided.
-  "ALL",
-]
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
 unfixable = []
 
 [tool.ruff.format]
@@ -56,5 +56,4 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "lf"
 docstring-code-format = true
-# tombi: lint.rules.type-mismatch.disabled = true
-docstring-code-line-length = "dynamic"
+docstring-code-line-length = "dynamic"  # tombi: lint.rules.type-mismatch.disabled = true

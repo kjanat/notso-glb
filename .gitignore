@@ -10,3 +10,6 @@ wheels/
 .venv
 **/.*_cachce
 .coverage
+*.gltf
+*.glb
+*.bin
