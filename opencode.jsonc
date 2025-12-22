@@ -1,0 +1,23 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "blender": {
+      "type": "local",
+      "command": ["uv", "run", "blender-mcp"],
+      "enabled": true,
+      "environment": {
+        "UV_PROJECT": "~/projects/blender-mcp",
+      },
+    },
+  },
+  "lsp": {
+    "ruff": {
+      "command": [".venv/bin/ruff", "server", "--preview"],
+      "extensions": [".py", ".pyi", ".ipynb"],
+    },
+    "ty": {
+      "command": [".venv/bin/ty", "server"],
+      "extensions": [".py", ".pyi", ".ipynb"],
+    },
+  },
+}

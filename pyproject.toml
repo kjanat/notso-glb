@@ -12,6 +12,39 @@ dependencies = [
 [project.scripts]
 notso-glb = "notso_glb:main"
 
+[dependency-groups]
+dev = [
+  "pytest>=9.0.2",
+  "ruff>=0.14.10",
+  "ty>=0.0.5",
+]
+
 [build-system]
 requires = ["uv_build>=0.9.18,<0.10.0"]
 build-backend = "uv_build"
+
+[tool.ruff]
+# Same as Black.
+line-length = 88
+indent-width = 4
+target-version = "py311"
+
+[tool.ruff.lint]
+preview = true
+select = ["E4", "E7", "E9", "F", "F", "B", "UP"]
+ignore = []
+fixable = [
+  # Allow fix for all enabled rules (when `--fix`) is provided.
+  "ALL",
+]
+unfixable = []
+
+[tool.ruff.format]
+preview = true
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
+docstring-code-format = true
+# tombi: lint.rules.type-mismatch.disabled = true
+docstring-code-line-length = "dynamic"
