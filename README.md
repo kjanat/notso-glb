@@ -2,16 +2,26 @@
 
 > Cleans up Blender files and exports optimized GLB for web delivery.
 
+```sh
+uvx --python 3.11 --from git+https://github.com/kjanat/notso-glb.git notso-glb --help
+```
+
+<p align="center">
+  <img alt="Screenshot with cli options" width="100%" src="https://raw.githubusercontent.com/kjanat/notso-glb/refs/heads/master/screenshot.webp">
+</p>
+
+## Features
+
 Optimizations:
 
 - Detects bloated props (high-vert non-skinned meshes, repetitive geometry)
 - Detects skinned meshes with non-root parents (glTF spec issue)
-- Detects unused UV maps (TEXCOORD bloat)
+- Detects unused UV maps (`TEXCOORD` bloat)
 - Detects duplicate names and sanitization collisions
 - Removes unused vertex groups (bone weight bloat)
 - Marks static bones as non-deform (animation bloat)
 - Removes bone shape objects (Icosphere artifacts)
-- Resizes textures to max 1024px (optional POT enforcement)
+- Resizes textures to max 1024px (optional `POT` enforcement)
 - Exports with Draco mesh compression
 - Exports with WebP textures
 
@@ -20,7 +30,7 @@ Bloat Detection:
 - CRITICAL: Props >2000 verts, repetitive detail (many islands with high verts)
 - WARNING: Props >1000 verts, scene total >15000 verts, non-root skinned meshes
 
-Experimental Auto-fix (--experimental-autofix):
+Experimental Auto-fix (`--experimental-autofix`):
 
 - BMesh cleanup (remove doubles, degenerate geometry, loose verts)
 - Decimate bloated props to ~1600 verts
@@ -55,13 +65,13 @@ CLI options (blender: after --):
     --force-pot                 Force power-of-two texture dimensions
     --skip-animation-analysis   Skip static bone detection (faster)
     --skip-bloat-check          Skip mesh complexity analysis
-    --experimental-autofix      Auto-fix bloated props, unused UVs, duplicates
+    --autofix                   Auto-fix bloated props, unused UVs, duplicates
 ```
 
 ## Requirements
 
 - Blender 5.0+
-- Python 3.10+ (bundled with Blender)
+- Python 3.11 (bundled with Blender)
 
 ## Useful Links
 
@@ -78,3 +88,5 @@ CLI options (blender: after --):
 [Blender 5.0 Reference Manual]: https://docs.blender.org/manual/en/latest
 [Blender 5.0 glTF 2.0]: https://docs.blender.org/manual/en/5.0/addons/import_export/scene_gltf2.html
 [Blender 5.0 Python API Documentation]: https://docs.blender.org/api/current/index.html
+
+<!-- markdownlint-disable-file MD033 -->
