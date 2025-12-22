@@ -266,16 +266,46 @@ def _check_skinned_meshes(step: StepTimer) -> None:
     print(f"{cyan(border)}")
     print(f"  {dim('(Parent transforms do not affect skinned meshes in glTF)')}")
 
+    # Group by parent
+    by_parent: dict[str, list[dict]] = {}
     for w in skinned_warnings:
-        if w["severity"] == "CRITICAL":
-            icon = bright_red("!!!")
-            transform_note = bright_red(" (has non-identity transform!)")
-        else:
-            icon = dim(" i ")
-            transform_note = ""
-        if w["has_transform"] and w["severity"] != "CRITICAL":
-            transform_note = yellow(" (has transform)")
-        print(f"  {icon} {w['mesh']} -> parent: {w['parent']}{transform_note}")
+        parent = str(w["parent"])
+        if parent not in by_parent:
+            by_parent[parent] = []
+        by_parent[parent].append(w)
+
+    # Display grouped by parent in columns
+    col_width = 20
+    num_cols = 3
+
+    for parent, items in sorted(by_parent.items()):
+        # Check if any in this group are critical
+        has_critical = any(w["severity"] == "CRITICAL" for w in items)
+        parent_color = bright_red if has_critical else dim
+        print(f"\n  parent: {parent_color(parent)} ({len(items)})")
+
+        # Sort items by mesh name
+        sorted_items = sorted(items, key=lambda w: str(w["mesh"]))
+
+        # Build display items with icons
+        display_items: list[str] = []
+        for w in sorted_items:
+            mesh_name = str(w["mesh"])
+            if w["severity"] == "CRITICAL":
+                icon = bright_red("!!!")
+                name = bright_red(mesh_name[: col_width - 5])
+            elif w["has_transform"]:
+                icon = yellow(" ! ")
+                name = yellow(mesh_name[: col_width - 5])
+            else:
+                icon = dim(" i ")
+                name = mesh_name[: col_width - 5]
+            display_items.append(f"{icon} {name:<{col_width - 5}}")
+
+        # Print in columns
+        for i in range(0, len(display_items), num_cols):
+            row = display_items[i : i + num_cols]
+            print(f"    {''.join(row)}")
 
     print(f"{cyan(border)}")
     print(f"  {dim('To fix: Apply parent transforms or reparent to scene root')}")
