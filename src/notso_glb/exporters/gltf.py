@@ -93,7 +93,8 @@ def _do_import_gltf(
     log_level = 30 if quiet else 0  # WARNING level when quiet
 
     if step:
-        step.step(f"Importing {cyan(os.path.basename(filepath))}...")
+        step.step("Importing into Blender...")
+        log_detail(dim(os.path.basename(filepath)))
     else:
         log_info(f"Importing {cyan(os.path.basename(filepath))}...")
 
@@ -507,7 +508,8 @@ def _export_file(step: StepTimer, config: ExportConfig) -> str | None:
         output_path_str = str(config.output_path)
 
     output_path_str = bpy.path.abspath(output_path_str)
-    step.step("Exporting...")
+    ext = "GLB" if config.export_format == "GLB" else "glTF"
+    step.step(f"Exporting {ext}...")
     log_detail(dim(output_path_str))
 
     draco_str = bright_green("ON") if config.use_draco else dim("OFF")
