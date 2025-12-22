@@ -1,6 +1,5 @@
 """Colored logging and timing utilities for notso-glb."""
 
-import io
 import os
 import sys
 import time
@@ -325,33 +324,65 @@ def format_delta(before: int, after: int, unit: str = "") -> str:
         return bright_red(f"+{diff:,}{unit}")
 
 
+def _process_blender_output(output: str) -> None:
+    """Process captured Blender output, showing only warnings/errors."""
+    for line in output.splitlines():
+        # Pass through warnings and errors with our formatting
+        if "| WARNING:" in line:
+            msg = line.split("| WARNING:", 1)[-1].strip()
+            log_warn(f"[Blender] {msg}")
+        elif "| ERROR:" in line:
+            msg = line.split("| ERROR:", 1)[-1].strip()
+            log_error(f"[Blender] {msg}")
+        # Suppress: INFO lines, DracoDecoder lines, and other noise
+        # (all other lines are discarded)
+
+
 @contextmanager
 def filter_blender_output() -> Iterator[None]:
-    """Filter Blender output: suppress INFO, pass through WARNING/ERROR.
+    """Filter Blender output: suppress INFO/debug, pass through WARNING/ERROR.
 
-    Captures stdout during Blender operations and:
-    - Suppresses INFO and DracoDecoder lines
-    - Reformats and displays WARNING/ERROR lines with our colors
+    Redirects at the OS file descriptor level to capture native C output
+    (like DracoDecoder) that bypasses Python's sys.stdout/stderr.
 
     Output is post-processed after the operation completes.
     """
-    buffer = io.StringIO()
-    old_stdout = sys.stdout
-    sys.stdout = buffer
+    import tempfile
+
+    # Save original file descriptors
+    stdout_fd = sys.stdout.fileno()
+    stderr_fd = sys.stderr.fileno()
+    saved_stdout_fd = os.dup(stdout_fd)
+    saved_stderr_fd = os.dup(stderr_fd)
+
+    # Create temp files to capture output
+    stdout_tmp = tempfile.TemporaryFile(mode="w+", encoding="utf-8")
+    stderr_tmp = tempfile.TemporaryFile(mode="w+", encoding="utf-8")
+
     try:
+        # Redirect file descriptors to temp files
+        os.dup2(stdout_tmp.fileno(), stdout_fd)
+        os.dup2(stderr_tmp.fileno(), stderr_fd)
         yield
     finally:
-        sys.stdout = old_stdout
-        # Process captured output
-        for line in buffer.getvalue().splitlines():
-            if "| WARNING:" in line:
-                # Extract message after "WARNING: "
-                msg = line.split("| WARNING:", 1)[-1].strip()
-                log_warn(f"[Blender] {msg}")
-            elif "| ERROR:" in line:
-                msg = line.split("| ERROR:", 1)[-1].strip()
-                log_error(f"[Blender] {msg}")
-            # Discard INFO and DracoDecoder lines
+        # Flush before restoring
+        sys.stdout.flush()
+        sys.stderr.flush()
+
+        # Restore original file descriptors
+        os.dup2(saved_stdout_fd, stdout_fd)
+        os.dup2(saved_stderr_fd, stderr_fd)
+        os.close(saved_stdout_fd)
+        os.close(saved_stderr_fd)
+
+        # Read and process captured output
+        stdout_tmp.seek(0)
+        stderr_tmp.seek(0)
+        _process_blender_output(stdout_tmp.read())
+        _process_blender_output(stderr_tmp.read())
+
+        stdout_tmp.close()
+        stderr_tmp.close()
 
 
 @contextmanager

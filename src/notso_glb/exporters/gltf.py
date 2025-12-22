@@ -76,14 +76,17 @@ def import_gltf(filepath: str, quiet: bool = False) -> None:
     if ext not in (".glb", ".gltf"):
         raise ValueError(f"Unsupported format: {ext}")
 
+    # Log level: 0=all, 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR, 50=CRITICAL
+    log_level = 30 if quiet else 0  # WARNING level when quiet
+
     log_info(f"Importing {cyan(os.path.basename(filepath))}...")
     if quiet:
         with filter_blender_output():
             with timed("glTF import", print_on_exit=False) as t:
-                bpy.ops.import_scene.gltf(filepath=filepath)
+                bpy.ops.import_scene.gltf(filepath=filepath, loglevel=log_level)
     else:
         with timed("glTF import") as t:
-            bpy.ops.import_scene.gltf(filepath=filepath)
+            bpy.ops.import_scene.gltf(filepath=filepath, loglevel=log_level)
     log_ok(f"Imported in {bright_cyan(format_duration(t.elapsed))}")
 
 
@@ -413,9 +416,13 @@ def _clean_and_optimize(step: StepTimer, config: ExportConfig) -> None:
 
 def _do_export(output_path: str, config: ExportConfig, use_draco: bool) -> None:
     """Execute the actual glTF export call."""
+    # Log level: -1=all, 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR, 50=CRITICAL
+    log_level = 30 if config.quiet else -1  # WARNING level when quiet
+
     bpy.ops.export_scene.gltf(
         filepath=output_path,
         export_format=config.export_format,
+        export_loglevel=log_level,
         # Bones: deform only
         export_def_bones=True,
         export_hierarchy_flatten_bones=False,
