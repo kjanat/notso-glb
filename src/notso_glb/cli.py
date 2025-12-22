@@ -157,24 +157,18 @@ def optimize(
     ext = os.path.splitext(abs_input_path)[1].lower()
 
     # Lazy import to keep CLI snappy and avoid bpy issues in help
-    from notso_glb.exporters import import_gltf, optimize_and_export
+    from notso_glb.exporters import optimize_and_export
 
-    # Import if GLB/glTF (blend files are already loaded if we are inside Blender,
-    # but if running standalone with bpy module, we might need to open it?)
-    # For now, we assume if it's .glb/.gltf we import it.
+    # Determine if we need to import
+    # GLB/glTF files: pass to optimize_and_export for import with timing
+    # .blend files: already loaded if running via `blender --python`
+    input_for_import: str | None = None
     if ext in (".glb", ".gltf"):
-        import_gltf(abs_input_path, quiet=quiet)
+        input_for_import = abs_input_path
     elif ext != ".blend":
         console.print(f"[bold red][ERROR][/] Unsupported format: {ext}")
         console.print("        Supported: .blend, .glb, .gltf")
         raise typer.Exit(code=1)
-
-    # If it is a .blend file and we are running this script via `blender --python`,
-    # the file is already open.
-    # If we are running via `uv run` with `bpy` installed, we might need to open it?
-    # The original code didn't explicitly open .blend files, implying reliance on
-    # `blender file.blend --python ...` OR `bpy.ops.wm.open_mainfile` if strictly standalone.
-    # However, `import_gltf` does `bpy.ops.object.delete()`.
 
     # Map CLI format to Blender format
     format_map = {
@@ -205,6 +199,7 @@ def optimize(
         check_bloat=check_bloat,
         experimental_autofix=autofix,
         quiet=quiet,
+        input_path=input_for_import,
     )
 
     if not result:

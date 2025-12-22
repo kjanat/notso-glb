@@ -275,6 +275,13 @@ class StepTimer:
             prev_name = self.timings[-1][0]
             self.timings[-1] = (prev_name, elapsed)
 
+    def final_message(self, message: str, success: bool = True) -> None:
+        """Print final step message without timing (for completion messages)."""
+        self.current += 1
+        color = bright_green if success else bright_red
+        step_str = f"[{self.current}/{self.total}]"
+        print(f"\n{color(step_str)} {message}")
+
     def total_elapsed(self) -> float:
         """Get total elapsed time since timer started."""
         return time.perf_counter() - self._total_start
@@ -360,14 +367,31 @@ def filter_blender_output() -> Iterator[None]:
     stderr_tmp = tempfile.TemporaryFile(mode="w+", encoding="utf-8")
 
     try:
+        # Flush Python buffers before redirecting
+        sys.stdout.flush()
+        sys.stderr.flush()
+
         # Redirect file descriptors to temp files
         os.dup2(stdout_tmp.fileno(), stdout_fd)
         os.dup2(stderr_tmp.fileno(), stderr_fd)
         yield
     finally:
-        # Flush before restoring
-        sys.stdout.flush()
-        sys.stderr.flush()
+        # Flush ALL C-level stdio buffers (captures DracoDecoder subprocess output)
+        # fflush(NULL) flushes all open output streams
+        import ctypes
+        import time
+
+        try:
+            libc = ctypes.CDLL(None)
+            libc.fflush(None)
+        except (OSError, AttributeError):
+            pass  # Fallback: just use fsync
+
+        # Small delay to ensure subprocess output is flushed to temp files
+        # DracoDecoder subprocess may still be writing when export returns
+        time.sleep(0.05)
+        os.fsync(stdout_fd)
+        os.fsync(stderr_fd)
 
         # Restore original file descriptors
         os.dup2(saved_stdout_fd, stdout_fd)

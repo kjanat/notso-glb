@@ -3,7 +3,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import bpy  # type: ignore[import-untyped]
 
@@ -65,7 +65,20 @@ class ExportConfig:
 
 
 def import_gltf(filepath: str, quiet: bool = False) -> None:
-    """Import GLB/glTF file into Blender scene."""
+    """Import GLB/glTF file into Blender scene (standalone, no step timing)."""
+    _do_import_gltf(filepath, quiet=quiet, step=None)
+
+
+def _do_import_gltf(
+    filepath: str, quiet: bool = False, step: StepTimer | None = None
+) -> None:
+    """Import GLB/glTF file into Blender scene.
+
+    Args:
+        filepath: Path to GLB/glTF file
+        quiet: Suppress verbose Blender output
+        step: Optional StepTimer for progress tracking
+    """
     from notso_glb.utils.logging import filter_blender_output
 
     with timed("Clearing scene", print_on_exit=False):
@@ -79,7 +92,11 @@ def import_gltf(filepath: str, quiet: bool = False) -> None:
     # Log level: 0=all, 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR, 50=CRITICAL
     log_level = 30 if quiet else 0  # WARNING level when quiet
 
-    log_info(f"Importing {cyan(os.path.basename(filepath))}...")
+    if step:
+        step.step(f"Importing {cyan(os.path.basename(filepath))}...")
+    else:
+        log_info(f"Importing {cyan(os.path.basename(filepath))}...")
+
     if quiet:
         with filter_blender_output():
             with timed("glTF import", print_on_exit=False) as t:
@@ -87,7 +104,12 @@ def import_gltf(filepath: str, quiet: bool = False) -> None:
     else:
         with timed("glTF import") as t:
             bpy.ops.import_scene.gltf(filepath=filepath, loglevel=log_level)
-    log_ok(f"Imported in {bright_cyan(format_duration(t.elapsed))}")
+
+    msg = f"Imported in {bright_cyan(format_duration(t.elapsed))}"
+    if step:
+        log_detail(msg)
+    else:
+        log_ok(msg)
 
 
 def _analyze_bloat(step: StepTimer, config: ExportConfig) -> None:
@@ -416,39 +438,43 @@ def _clean_and_optimize(step: StepTimer, config: ExportConfig) -> None:
 
 def _do_export(output_path: str, config: ExportConfig, use_draco: bool) -> None:
     """Execute the actual glTF export call."""
-    # NOTE: export_loglevel has a bug in Blender 5.0 glTF addon - it only sets
-    # internal 'loglevel' when export_loglevel < 0. We use -1 and rely on
-    # filter_blender_output() for quiet mode filtering instead.
-    bpy.ops.export_scene.gltf(
-        filepath=output_path,
-        export_format=config.export_format,
+    export_params: dict[str, Any] = {
+        "filepath": output_path,
+        "export_format": config.export_format,
         # Bones: deform only
-        export_def_bones=True,
-        export_hierarchy_flatten_bones=False,
-        export_leaf_bone=False,
+        "export_def_bones": True,
+        "export_hierarchy_flatten_bones": False,
+        "export_leaf_bone": False,
         # Animation optimization
-        export_animations=True,
-        export_nla_strips=True,
-        export_optimize_animation_size=True,
-        export_optimize_animation_keep_anim_armature=True,
-        export_force_sampling=True,
-        export_frame_step=1,
-        export_skins=True,
+        "export_animations": True,
+        "export_nla_strips": True,
+        "export_optimize_animation_size": True,
+        "export_optimize_animation_keep_anim_armature": True,
+        "export_force_sampling": True,
+        "export_frame_step": 1,
+        "export_skins": True,
         # Mesh compression (Draco)
-        export_draco_mesh_compression_enable=use_draco,
-        export_draco_mesh_compression_level=6,
-        export_draco_position_quantization=14,
-        export_draco_normal_quantization=10,
-        export_draco_texcoord_quantization=12,
+        "export_draco_mesh_compression_enable": use_draco,
+        "export_draco_mesh_compression_level": 6,
+        "export_draco_position_quantization": 14,
+        "export_draco_normal_quantization": 10,
+        "export_draco_texcoord_quantization": 12,
         # Textures
-        export_image_format="WEBP" if config.use_webp else "AUTO",
+        "export_image_format": "WEBP" if config.use_webp else "AUTO",
         # Standard settings
-        export_yup=True,
-        export_texcoords=True,
-        export_normals=True,
-        export_materials="EXPORT",
-        export_shared_accessors=True,
-    )
+        "export_yup": True,
+        "export_texcoords": True,
+        "export_normals": True,
+        "export_materials": "EXPORT",
+        "export_shared_accessors": True,
+    }
+
+    # Blender 5.0+ requires export_loglevel for proper logging initialization
+    # The addon only sets internal 'loglevel' when export_loglevel < 0
+    if bpy.app.version >= (5, 0, 0):
+        export_params["export_loglevel"] = -1
+
+    bpy.ops.export_scene.gltf(**export_params)  # pyright: ignore[reportCallIssue]
 
 
 def _try_export(output_path: str, config: ExportConfig, use_draco: bool) -> str | None:
@@ -481,7 +507,7 @@ def _export_file(step: StepTimer, config: ExportConfig) -> str | None:
         output_path_str = str(config.output_path)
 
     output_path_str = bpy.path.abspath(output_path_str)
-    step.step(f"Exporting to: {cyan(os.path.basename(output_path_str))}")
+    step.step("Exporting...")
     log_detail(dim(output_path_str))
 
     draco_str = bright_green("ON") if config.use_draco else dim("OFF")
@@ -533,6 +559,7 @@ def optimize_and_export(
     check_bloat: bool = True,
     experimental_autofix: bool = False,
     quiet: bool = False,
+    input_path: str | None = None,
 ) -> str | None:
     """
     Main optimization and export function.
@@ -548,6 +575,7 @@ def optimize_and_export(
         check_bloat: Analyze meshes for unreasonable complexity
         experimental_autofix: Auto-decimate bloated props (EXPERIMENTAL)
         quiet: Suppress Blender's verbose output (show only warnings/errors)
+        input_path: Path to GLB/glTF file to import (if None, uses current scene)
     """
     config = ExportConfig(
         output_path=output_path,
@@ -562,10 +590,16 @@ def optimize_and_export(
         quiet=quiet,
     )
 
-    step = StepTimer(total_steps=10)
+    # 10 steps if no import, 11 if importing
+    total_steps = 11 if input_path else 10
+    step = StepTimer(total_steps=total_steps)
 
     # Header
     print_header("GLB EXPORT OPTIMIZER")
+
+    # Import if path provided
+    if input_path:
+        _do_import_gltf(input_path, quiet=quiet, step=step)
 
     # Show before stats
     stats = get_scene_stats()
@@ -590,7 +624,7 @@ def optimize_and_export(
 
     # Report results based on success/failure
     if result_path and os.path.exists(result_path):
-        step.step("Export complete!")
+        step.final_message("Export complete!", success=True)
         size = os.path.getsize(result_path)
         print(f"\n{cyan('=' * 60)}")
         print(f"  {bold('OUTPUT')}: {bright_green(os.path.basename(result_path))}")
@@ -605,7 +639,7 @@ def optimize_and_export(
 
         return result_path
     else:
-        step.step(f"{bright_red('Export FAILED')}")
+        step.final_message("Export FAILED", success=False)
         if result_path:  # Path was determined but file missing?
             log_warn("Output file not found at expected path")
         return None
