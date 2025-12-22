@@ -1,9 +1,3 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.11, <3.12"
-# dependencies = ["bpy"]
-# ///
-
 """
 GLB Export Optimizer for Mascot Models
 ======================================
@@ -62,7 +56,7 @@ Usage:
 
 import os
 
-import bpy  # ty:ignore[unresolved-import]  # pyright: ignore[reportMissingImports]
+from notso_glb._bpy import bpy
 
 
 def clean_vertex_groups():
@@ -297,7 +291,7 @@ def get_scene_stats():
 
 def count_mesh_islands(obj):
     """Count disconnected mesh parts (islands) using BFS"""
-    import bmesh  # ty:ignore[unresolved-import]  # pyright: ignore[reportMissingImports]
+    from notso_glb._bpy import bmesh
 
     bm = bmesh.new()
     bm.from_mesh(obj.data)
@@ -344,7 +338,7 @@ def cleanup_mesh_bmesh(obj):
 
     Returns dict with cleanup stats or None if failed.
     """
-    import bmesh  # ty:ignore[unresolved-import]  # pyright: ignore[reportMissingImports]
+    from notso_glb._bpy import bmesh
 
     original_verts = len(obj.data.vertices)
     original_faces = len(obj.data.polygons)
@@ -639,13 +633,15 @@ def remove_unused_uv_maps(warnings):
     return removed
 
 
-def nearest_power_of_two(n):
+def nearest_power_of_two(n: int) -> int:
     """Round to nearest power of two."""
-    if n <= 0:
+    if n <= 1:
         return 1
     # Find closest power of 2
-    lower = 1 << (n - 1).bit_length() - 1
-    upper = 1 << (n - 1).bit_length()
+    # bit_length() gives position of highest bit, so 2^(bit_length-1) <= n < 2^bit_length
+    bit_len = (n - 1).bit_length()
+    lower = 1 << (bit_len - 1)
+    upper = 1 << bit_len
     return lower if (n - lower) < (upper - n) else upper
 
 
