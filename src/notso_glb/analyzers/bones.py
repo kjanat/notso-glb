@@ -27,7 +27,12 @@ def get_bones_used_for_skinning() -> set[str]:
 
 
 def analyze_bone_animation() -> set[str]:
-    """Find bones that never animate across all actions."""
+    """Find bones that never animate across all actions.
+
+    Optimized to batch frame evaluations - evaluates all bones at once per frame
+    instead of switching frames per-bone, reducing scene updates from O(bones*actions)
+    to O(actions).
+    """
     armature: Object | None = None
     for obj in bpy.data.objects:
         if obj.type == "ARMATURE":
@@ -49,21 +54,31 @@ def analyze_bone_animation() -> set[str]:
         frame_start = int(action.frame_range[0])
         frame_end = int(action.frame_range[1])
 
+        # Evaluate start frame ONCE for all bones
+        scene.frame_set(frame_start)
+        view_layer.update()
+        start_poses: dict[str, tuple] = {}
         for bone in armature.pose.bones:
-            scene.frame_set(frame_start)
-            view_layer.update()
-            start_loc = bone.location.copy()
-            start_rot_q = bone.rotation_quaternion.copy()
-            start_rot_e = bone.rotation_euler.copy()
+            start_poses[bone.name] = (
+                bone.location.copy(),
+                bone.rotation_quaternion.copy(),
+                bone.rotation_euler.copy(),
+                bone.rotation_mode,
+            )
 
-            scene.frame_set(frame_end)
-            view_layer.update()
+        # Evaluate end frame ONCE for all bones
+        scene.frame_set(frame_end)
+        view_layer.update()
+
+        # Now calculate diffs without any frame switching
+        for bone in armature.pose.bones:
+            start_loc, start_rot_q, start_rot_e, rot_mode = start_poses[bone.name]
             end_loc = bone.location.copy()
             end_rot_q = bone.rotation_quaternion.copy()
             end_rot_e = bone.rotation_euler.copy()
 
             loc_diff = (end_loc - start_loc).length  # ty: ignore[unsupported-operator]
-            if bone.rotation_mode == "QUATERNION":
+            if rot_mode == "QUATERNION":
                 rot_diff = (end_rot_q - start_rot_q).magnitude  # ty: ignore[unsupported-operator]
             else:
                 rot_diff = (
