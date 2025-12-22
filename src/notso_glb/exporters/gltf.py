@@ -416,14 +416,12 @@ def _clean_and_optimize(step: StepTimer, config: ExportConfig) -> None:
 
 def _do_export(output_path: str, config: ExportConfig, use_draco: bool) -> None:
     """Execute the actual glTF export call."""
-    # Log level: 0=all, 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR, 50=CRITICAL
-    # Export uses export_loglevel, import uses loglevel
-    log_level = 30 if config.quiet else 0  # WARNING level when quiet
-
+    # NOTE: export_loglevel has a bug in Blender 5.0 glTF addon - it only sets
+    # internal 'loglevel' when export_loglevel < 0. We use -1 and rely on
+    # filter_blender_output() for quiet mode filtering instead.
     bpy.ops.export_scene.gltf(
         filepath=output_path,
         export_format=config.export_format,
-        export_loglevel=log_level,  # pyright: ignore[reportCallIssue]
         # Bones: deform only
         export_def_bones=True,
         export_hierarchy_flatten_bones=False,
