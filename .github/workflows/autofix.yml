@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+---
+name: autofix.ci
+on:
+  push: { branches: ["master"] }
+  pull_request:
+  workflow_call:
+permissions: { contents: read }
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - name: install dprint
+        run: curl -fsSL https://dprint.dev/install.sh | sh >/dev/null 2>&1
+
+      - run: uvx ruff check --fix-only
+      - run: $HOME/.dprint/bin/dprint fmt --allow-no-files --diff --excludes ".github"
+
+      - uses: autofix-ci/action@v1
