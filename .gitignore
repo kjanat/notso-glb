@@ -8,11 +8,14 @@ wheels/
 
 # Virtual environments
 .venv
-**/.*_cachce
+**/.*_cache
 .coverage
 *.gltf
 *.glb
 *.bin
+
+# WASM cache (downloaded from npm)
+src/notso_glb/wasm/.cache/
 
 # Markdown files not to be included
 /_*.md

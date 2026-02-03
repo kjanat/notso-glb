@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .download import get_wasm_path
 from .runtime import GltfpackWasm
-from .runtime import _get_wasm_path
 
 __all__ = [
     "GltfpackWasm",
@@ -20,7 +20,9 @@ def is_available() -> bool:
     try:
         import wasmtime  # noqa: F401
 
-        return _get_wasm_path().exists()
+        # Try to get WASM path (may download if not cached)
+        get_wasm_path()
+        return True
     except (ImportError, OSError):
         return False
 
