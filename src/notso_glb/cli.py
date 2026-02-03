@@ -218,11 +218,19 @@ def optimize(
     if use_gltfpack:
         from notso_glb.utils.gltfpack import run_gltfpack
         from notso_glb.utils.logging import format_bytes
+        from notso_glb.wasm import is_available as wasm_available
 
-        if not find_gltfpack():
-            console.print("[bold yellow][WARN][/] gltfpack not found in PATH, skipping")
+        native_available = find_gltfpack() is not None
+        wasm_ok = wasm_available()
+
+        if not native_available and not wasm_ok:
+            console.print(
+                "[bold yellow][WARN][/] gltfpack not found and WASM unavailable, skipping"
+            )
         else:
-            console.print("\n[bold cyan]Running gltfpack...[/]")
+            # Indicate which backend will be used
+            backend = "native" if native_available else "WASM"
+            console.print(f"\n[bold cyan]Running gltfpack ({backend})...[/]")
             original_size = Path(result).stat().st_size
 
             success, packed_path, msg = run_gltfpack(
