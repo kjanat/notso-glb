@@ -1,11 +1,12 @@
+# yml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+---
 name: Sync Labels
-
 on:
   push:
     branches: [master]
+  pull_request:
     paths: [".github/labels.yml"]
   workflow_dispatch:
-
 jobs:
   sync:
     runs-on: ubuntu-latest
