@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "GLB Export Optimizer for Mascot Models"
 readme = "README.md"
 requires-python = "==3.11.*"
+license = "MIT"
 authors = [{ name = "Kaj Kowalski", email = "info@kajkowalski.nl" }]
 keywords = [
   "3d",
@@ -26,6 +27,11 @@ classifiers = [
   "Topic :: Multimedia :: Graphics :: 3D Modeling",
   "Topic :: Multimedia :: Graphics :: Graphics Conversion"
 ]
+
+[project.urls]
+Homepage = "https://github.com/kjanat/notso-glb"
+Issues = "https://github.com/kjanat/notso-glb/issues"
+Repository = "https://github.com/kjanat/notso-glb.git"
 dependencies = [
   "bpy>=5,<6",
   "rich>=14.2.0",
