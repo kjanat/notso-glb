@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 import sys
 import tempfile
+from collections import defaultdict
 from pathlib import Path
 
 from notso_glb.wasm import get_wasm_path, is_available, run_gltfpack_wasm
@@ -23,12 +24,40 @@ VERSION_PATH = (
 MAX_FILE_SIZE = 10_000_000  # 10MB
 MAX_MODELS = int(os.environ.get("MAX_MODELS", "30"))
 
+# Expected failure patterns: (substring, category)
+EXPECTED_FAILURES: list[tuple[str, str]] = [
+    ("resource not found", "external-resources"),
+    ("Draco", "draco-input"),
+    ("file requires", "missing-extension"),
+    ("requires", "missing-feature"),
+]
+
+# Human-readable category descriptions
+CATEGORY_DESCRIPTIONS: dict[str, str] = {
+    "external-resources": "WASM lacks filesystem access for external .bin/.texture files",
+    "draco-input": "Draco-compressed input not supported by gltfpack",
+    "missing-extension": "Missing required glTF extension",
+    "missing-feature": "Missing required feature",
+}
+
 
 def get_bundled_version() -> str:
     """Get bundled WASM version."""
     if VERSION_PATH.exists():
         return VERSION_PATH.read_text().strip()
     return "unknown"
+
+
+def classify_failure(msg: str) -> tuple[bool, str]:
+    """Classify a failure as expected or unexpected.
+
+    Returns:
+        (is_expected, category) - category is empty string if unexpected
+    """
+    for pattern, category in EXPECTED_FAILURES:
+        if pattern in msg:
+            return True, category
+    return False, ""
 
 
 def main() -> int:
@@ -56,8 +85,8 @@ def main() -> int:
     print()
 
     passed = 0
-    failed = 0
-    skipped = 0
+    expected_by_category: dict[str, list[str]] = defaultdict(list)
+    unexpected_failed: list[tuple[str, str]] = []  # (model_name, error_msg)
 
     for model in sorted(models)[:MAX_MODELS]:
         rel_path = model.relative_to(MODEL_DIR)
@@ -76,36 +105,66 @@ def main() -> int:
                     out_size = out_path.stat().st_size / 1024
                     delta = (1 - out_size / size_kb) * 100 if size_kb > 0 else 0
                     print(
-                        f"  PASS {rel_path}: {size_kb:.1f}KB -> {out_size:.1f}KB ({delta:+.1f}%)"
+                        f"  PASS {rel_path}: "
+                        f"{size_kb:.1f}KB -> {out_size:.1f}KB ({delta:+.1f}%)"
                     )
                     passed += 1
-                elif "Draco" in msg or "requires" in msg:
-                    # Expected failures (Draco input, etc.)
-                    print(f"  SKIP {rel_path}: {msg[:60]}")
-                    skipped += 1
                 else:
-                    print(f"  FAIL {rel_path}: {msg[:80]}")
-                    failed += 1
+                    is_expected, category = classify_failure(msg)
+                    if is_expected:
+                        print(f"  EXPECTED [{category}] {rel_path}")
+                        expected_by_category[category].append(str(rel_path))
+                    else:
+                        print(f"  FAIL {rel_path}: {msg[:80]}")
+                        unexpected_failed.append((str(rel_path), msg[:120]))
             except Exception as e:
                 print(f"  ERROR {rel_path}: {e}")
-                failed += 1
+                unexpected_failed.append((str(rel_path), str(e)[:120]))
 
+    total_expected = sum(len(v) for v in expected_by_category.values())
+
+    # Summary
     print()
-    print(f"Results: {passed} passed, {failed} failed, {skipped} skipped")
+    print(
+        f"Results: {passed} passed, "
+        f"{total_expected} expected failures, "
+        f"{len(unexpected_failed)} unexpected failures"
+    )
+
+    if expected_by_category:
+        print()
+        print("Expected failures by category:")
+        for category, models_list in sorted(expected_by_category.items()):
+            desc = CATEGORY_DESCRIPTIONS.get(category, category)
+            print(f"  [{category}] ({len(models_list)}): {desc}")
+            for model_name in models_list:
+                print(f"    - {model_name}")
+
+    if unexpected_failed:
+        print()
+        print("UNEXPECTED FAILURES (investigate these):")
+        for model_name, error_msg in unexpected_failed:
+            print(f"  - {model_name}: {error_msg}")
 
     # Write to GITHUB_OUTPUT if available
     github_output = os.environ.get("GITHUB_OUTPUT")
     if github_output:
         with open(github_output, "a") as f:
             f.write(f"passed={passed}\n")
-            f.write(f"failed={failed}\n")
-            f.write(f"skipped={skipped}\n")
+            f.write(f"expected-failed={total_expected}\n")
+            f.write(f"unexpected-failed={len(unexpected_failed)}\n")
+            # Per-category counts
+            for category in CATEGORY_DESCRIPTIONS:
+                count = len(expected_by_category.get(category, []))
+                f.write(f"expected-{category}={count}\n")
 
-    # Allow up to 20% failures
-    if failed > len(models) * 0.2:
-        print("ERROR: Too many failures")
+    # Fail only on unexpected failures
+    if unexpected_failed:
+        print()
+        print(f"FAILED: {len(unexpected_failed)} unexpected failure(s)")
         return 1
 
+    print()
     print("SUCCESS")
     return 0
 

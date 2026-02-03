@@ -15,12 +15,24 @@ outputs:
   passed:
     description: Number of tests passed
     value: ${{ steps.test.outputs.passed }}
-  failed:
-    description: Number of tests failed
-    value: ${{ steps.test.outputs.failed }}
-  skipped:
-    description: Number of tests skipped
-    value: ${{ steps.test.outputs.skipped }}
+  expected-failed:
+    description: Total expected failures (WASM limitations)
+    value: ${{ steps.test.outputs.expected-failed }}
+  unexpected-failed:
+    description: Number of unexpected failures (real bugs)
+    value: ${{ steps.test.outputs.unexpected-failed }}
+  expected-external-resources:
+    description: Expected failures due to external resources
+    value: ${{ steps.test.outputs.expected-external-resources }}
+  expected-draco-input:
+    description: Expected failures due to Draco input
+    value: ${{ steps.test.outputs.expected-draco-input }}
+  expected-missing-extension:
+    description: Expected failures due to missing extension
+    value: ${{ steps.test.outputs.expected-missing-extension }}
+  expected-missing-feature:
+    description: Expected failures due to missing feature
+    value: ${{ steps.test.outputs.expected-missing-feature }}
 
 runs:
   using: composite
