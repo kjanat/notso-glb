@@ -21,7 +21,7 @@ jobs:
         with: { activate-environment: true }
 
       - name: Set up Python
-        run: uv python install
+        run: uv python install 3.11
 
       - name: Install dependencies
         run: uv sync
@@ -42,6 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      version: ${{ steps.build.outputs.version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -49,8 +51,14 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
+      - name: Set up Python
+        run: uv python install 3.11
+
       - name: Build package
-        run: uv build --no-sources
+        id: build
+        run: |
+          uv build --no-sources
+          echo "version=$(uv version --short)" >> "$GITHUB_OUTPUT"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v6
@@ -61,7 +69,9 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    environment: pypi
+    environment:
+      name: pypi
+      url: https://pypi.org/project/notso-glb/${{ needs.build.outputs.version }}/
     permissions:
       id-token: write
       attestations: write
