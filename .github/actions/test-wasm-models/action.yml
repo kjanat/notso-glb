@@ -1,0 +1,35 @@
+name: Test WASM Models
+description: Test gltfpack WASM against three.js glTF models
+
+inputs:
+  model-dir:
+    description: "Path to test models directory"
+    required: false
+    default: "test-models/three.js/examples/models/gltf"
+  max-models:
+    description: "Maximum number of models to test"
+    required: false
+    default: "30"
+
+outputs:
+  passed:
+    description: Number of tests passed
+    value: ${{ steps.test.outputs.passed }}
+  failed:
+    description: Number of tests failed
+    value: ${{ steps.test.outputs.failed }}
+  skipped:
+    description: Number of tests skipped
+    value: ${{ steps.test.outputs.skipped }}
+
+runs:
+  using: composite
+  steps:
+    - name: Run WASM model tests
+      id: test
+      shell: bash
+      env:
+        MODEL_DIR: ${{ inputs.model-dir }}
+        MAX_MODELS: ${{ inputs.max-models }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: uv run "${ACTION_PATH}/test.py"

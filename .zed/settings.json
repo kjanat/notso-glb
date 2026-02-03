@@ -1,4 +1,6 @@
 {
+  "formatter": [{ "external": { "command": "dprint", "arguments": ["fmt", "--stdin", "{buffer_path}"] } }],
+  "prettier": { "allowed": false },
   "wrap_guides": [80],
   "languages": {
     "Python": {
@@ -32,7 +34,7 @@
       "initialization_options": {
         "pylsp": {
           "plugins": {
-            "pycodestyle": { "ignore": ["E203"] }
+            "pycodestyle": { "ignore": ["E203", "W503"] }
           }
         }
       }

@@ -3,7 +3,7 @@
 name: Test WASM gltfpack
 
 on:
-  push: { branches: [master, "feature/*"] }
+  push: { branches: [master, feature/*] }
   pull_request: { branches: [master] }
   schedule: [{ cron: "0 0 * * 0" }] # Weekly check for new gltfpack versions
   workflow_dispatch:
@@ -33,13 +33,22 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Test WASM gltfpack on three.js models
-        run: uv run python scripts/test_wasm_models.py
+      - name: Download latest WASM from npm
+        id: wasm
+        uses: ./.github/actions/download-wasm
 
-      - name: Report WASM version
+      - name: Test WASM gltfpack on three.js models
+        id: test
+        uses: ./.github/actions/test-wasm-models
+
+      - name: Report results
         if: always()
         run: |
-          echo "### WASM gltfpack Test Results" >> $GITHUB_STEP_SUMMARY
-          uv run python -c "
-          from notso_glb.wasm.download import get_cached_version
-          print(f'- **gltfpack WASM version**: {get_cached_version() or \"unknown\"}')" >> $GITHUB_STEP_SUMMARY
+          {
+            echo -e "### WASM gltfpack Test Results\n"
+            echo "- **Bundled version**: ${{ steps.wasm.outputs.before }}"
+            echo "- **Tested version**: ${{ steps.wasm.outputs.after }}"
+            echo "- **Passed**: ${{ steps.test.outputs.passed }}"
+            echo "- **Failed**: ${{ steps.test.outputs.failed }}"
+            echo "- **Skipped**: ${{ steps.test.outputs.skipped }}"
+          } >> "$GITHUB_STEP_SUMMARY"

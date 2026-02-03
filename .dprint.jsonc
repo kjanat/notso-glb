@@ -15,6 +15,7 @@
         "command": "uvx tombi format - --stdin-filename {{file_path}}",
         "exts": ["toml"],
       },
+      { "command": "shfmt -i 0 -ln bash -bn -kp -ci --filename {{file_path}}", "exts": ["sh", "bash"] },
     ],
   },
   "excludes": ["**/node_modules", "**/*-lock.json", "**/.venv"],

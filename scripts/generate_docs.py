@@ -90,7 +90,8 @@ def clean_docs(content: str) -> str:
 
 def main() -> None:
     """Generate and clean CLI docs."""
-    output_path = Path("CLI.md")
+    project_root = Path(__file__).parent.parent
+    output_path = project_root / "CLI.md"
 
     print("Generating CLI documentation...")
 

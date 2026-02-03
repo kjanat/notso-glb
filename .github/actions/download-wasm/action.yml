@@ -1,0 +1,27 @@
+name: Download WASM
+description: Download latest gltfpack WASM from npm
+
+inputs:
+  version:
+    description: "Specific version to download, e.g. 1.0.0 (default: latest)"
+    required: false
+    default: ""
+
+outputs:
+  before:
+    description: WASM version before download
+    value: ${{ steps.download.outputs.before }}
+  after:
+    description: WASM version after download
+    value: ${{ steps.download.outputs.after }}
+
+runs:
+  using: composite
+  steps:
+    - name: Download latest WASM from npm
+      id: download
+      shell: bash
+      env:
+        WASM_VERSION: "${{ inputs.version }}"
+        ACTION_PATH: "${{ github.action_path }}"
+      run: "${ACTION_PATH}/download.sh"

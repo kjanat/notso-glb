@@ -16,6 +16,6 @@ jobs:
         run: curl -fsSL https://dprint.dev/install.sh | sh >/dev/null 2>&1
 
       - run: uvx ruff check --fix-only
-      - run: $HOME/.dprint/bin/dprint fmt --allow-no-files --diff --excludes ".github"
+      - run: '"$HOME/.dprint/bin/dprint" fmt --allow-no-files --diff --excludes ".github"'
 
       - uses: autofix-ci/action@v1

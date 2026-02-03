@@ -4,26 +4,29 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .download import get_wasm_path
-from .runtime import GltfpackWasm
+from .runtime import GltfpackWasm, _get_wasm_path
 
 __all__ = [
     "GltfpackWasm",
     "get_gltfpack",
+    "get_wasm_path",
     "is_available",
     "run_gltfpack_wasm",
 ]
 
 
+def get_wasm_path() -> Path:
+    """Get path to bundled gltfpack.wasm."""
+    return _get_wasm_path()
+
+
 def is_available() -> bool:
-    """Check if WASM runtime is available."""
+    """Check if WASM runtime (wasmtime) is importable and WASM exists."""
     try:
         import wasmtime  # noqa: F401
 
-        # Try to get WASM path (may download if not cached)
-        get_wasm_path()
-        return True
-    except (ImportError, OSError):
+        return _get_wasm_path().exists()
+    except ImportError:
         return False
 
 

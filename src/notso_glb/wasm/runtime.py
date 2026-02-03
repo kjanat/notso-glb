@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
-from .download import get_wasm_path
 from .wasi import WasiExit
 from .wasi import WasiFilesystem
+
+
+def _get_wasm_path() -> Path:
+    """Get path to bundled gltfpack.wasm."""
+    return Path(__file__).parent / "gltfpack.wasm"
 
 
 class GltfpackWasm(WasiFilesystem):
@@ -56,7 +61,7 @@ class GltfpackWasm(WasiFilesystem):
 
         engine = Engine()
         self._store = Store(engine)
-        wasm_bytes = get_wasm_path().read_bytes()
+        wasm_bytes = _get_wasm_path().read_bytes()
         module = Module(engine, wasm_bytes)
 
         linker = Linker(engine)

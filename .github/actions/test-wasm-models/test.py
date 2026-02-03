@@ -1,19 +1,34 @@
+#!/usr/bin/env -S uv run
 """Test WASM gltfpack against three.js glTF models."""
 
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 from pathlib import Path
 
-from notso_glb.wasm import get_wasm_path
-from notso_glb.wasm import is_available
-from notso_glb.wasm import run_gltfpack_wasm
-from notso_glb.wasm.download import get_cached_version
+from notso_glb.wasm import get_wasm_path, is_available, run_gltfpack_wasm
 
-MODEL_DIR = Path("test-models/three.js/examples/models/gltf")
+MODEL_DIR = Path(
+    os.environ.get("MODEL_DIR", "test-models/three.js/examples/models/gltf")
+)
+VERSION_PATH = (
+    Path(__file__).parent.parent.parent.parent
+    / "src"
+    / "notso_glb"
+    / "wasm"
+    / "gltfpack.version"
+)
 MAX_FILE_SIZE = 10_000_000  # 10MB
-MAX_MODELS = 30
+MAX_MODELS = int(os.environ.get("MAX_MODELS", "30"))
+
+
+def get_bundled_version() -> str:
+    """Get bundled WASM version."""
+    if VERSION_PATH.exists():
+        return VERSION_PATH.read_text().strip()
+    return "unknown"
 
 
 def main() -> int:
@@ -26,7 +41,7 @@ def main() -> int:
         return 1
 
     wasm_path = get_wasm_path()
-    version = get_cached_version()
+    version = get_bundled_version()
     print(f"WASM version: {version}")
     print(f"WASM path: {wasm_path}")
     print(f"WASM size: {wasm_path.stat().st_size / 1024:.1f} KB")
@@ -75,6 +90,14 @@ def main() -> int:
 
     print()
     print(f"Results: {passed} passed, {failed} failed, {skipped} skipped")
+
+    # Write to GITHUB_OUTPUT if available
+    github_output = os.environ.get("GITHUB_OUTPUT")
+    if github_output:
+        with open(github_output, "a") as f:
+            f.write(f"passed={passed}\n")
+            f.write(f"failed={failed}\n")
+            f.write(f"skipped={skipped}\n")
 
     # Allow up to 20% failures
     if failed > len(models) * 0.2:

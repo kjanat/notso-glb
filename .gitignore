@@ -13,9 +13,10 @@ wheels/
 *.gltf
 *.glb
 *.bin
+.cache
 
-# WASM cache (downloaded from npm)
-src/notso_glb/wasm/.cache/
+# WASM binary (downloaded from npm during CI/publish)
+src/notso_glb/wasm/gltfpack.wasm
 
 # Markdown files not to be included
 /_*.md
