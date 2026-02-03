@@ -104,6 +104,10 @@ def main() -> None:
     output_path.write_text(clean_content)
     print(f"Docs saved to: {output_path}")
 
+    # Format with dprint
+    print("Formatting with dprint...")
+    subprocess.run(["dprint", "fmt", str(output_path)], check=True)
+
 
 if __name__ == "__main__":
     main()
