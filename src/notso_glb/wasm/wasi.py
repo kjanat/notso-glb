@@ -32,7 +32,7 @@ class WasiFilesystem:
         self._instance: Instance | None = None
         self._fs_interface: dict[str, bytes] | None = None
         self._output_buffer: bytearray = bytearray()
-        self._fds: dict[int, dict] = {}
+        self._fds: dict[int, dict[str, Any]] = {}
         self._memory_array: ctypes.Array | None = None
 
     def _init_fds(self) -> None:
@@ -72,21 +72,35 @@ class WasiFilesystem:
             ctypes.addressof(ptr.contents)
         )
 
+    def _check_bounds(self, func_name: str, offset: int, length: int) -> int:
+        """Validate memory access bounds, return memory length."""
+        self._refresh_memory()
+        assert self._memory_array is not None
+        mem_len = len(self._memory_array)
+        if offset < 0:
+            raise ValueError(f"{func_name}: negative offset {offset} (length={length})")
+        if offset + length > mem_len:
+            raise ValueError(
+                f"{func_name}: out of bounds offset={offset} length={length} "
+                f"exceeds memory size {mem_len}"
+            )
+        return mem_len
+
     def _get_string(self, offset: int, length: int) -> str:
         """Read string from WASM memory."""
-        self._refresh_memory()
+        self._check_bounds("_get_string", offset, length)
         assert self._memory_array is not None
         return bytes(self._memory_array[offset : offset + length]).decode("utf-8")
 
     def _set_u8(self, offset: int, value: int) -> None:
         """Write uint8 to WASM memory."""
-        self._refresh_memory()
+        self._check_bounds("_set_u8", offset, 1)
         assert self._memory_array is not None
         self._memory_array[offset] = value & 0xFF
 
     def _set_u32(self, offset: int, value: int) -> None:
         """Write uint32 (little-endian) to WASM memory."""
-        self._refresh_memory()
+        self._check_bounds("_set_u32", offset, 4)
         assert self._memory_array is not None
         val_bytes = value.to_bytes(4, "little")
         for i, b in enumerate(val_bytes):
@@ -94,7 +108,7 @@ class WasiFilesystem:
 
     def _get_u32(self, offset: int) -> int:
         """Read uint32 (little-endian) from WASM memory."""
-        self._refresh_memory()
+        self._check_bounds("_get_u32", offset, 4)
         assert self._memory_array is not None
         return int.from_bytes(bytes(self._memory_array[offset : offset + 4]), "little")
 
@@ -125,6 +139,8 @@ class WasiFilesystem:
         """WASI fd_fdstat_get syscall."""
         if fd not in self._fds:
             return WASI_EBADF
+        # Validate stat buffer can hold fdstat struct (24 bytes)
+        self._check_bounds("wasi_fd_fdstat_get", stat, 24)
         fd_info = self._fds[fd]
         filetype = 3 if "path" in fd_info else 4
         self._set_u8(stat + 0, filetype)
@@ -265,7 +281,8 @@ class WasiFilesystem:
             data = fd_info.get("data", b"")
 
             read_len = min(size - pos, buf_len)
-            self._refresh_memory()
+            if read_len > 0:
+                self._check_bounds("wasi_fd_read", buf, read_len)
             assert self._memory_array is not None
             for j in range(read_len):
                 self._memory_array[buf + j] = data[pos + j]
@@ -288,7 +305,8 @@ class WasiFilesystem:
             buf = self._get_u32(iovs + 8 * i)
             buf_len = self._get_u32(iovs + 8 * i + 4)
 
-            self._refresh_memory()
+            if buf_len > 0:
+                self._check_bounds("wasi_fd_write", buf, buf_len)
             assert self._memory_array is not None
             write_data = bytes(self._memory_array[buf : buf + buf_len])
 

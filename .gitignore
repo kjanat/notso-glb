@@ -16,3 +16,6 @@ wheels/
 
 # Markdown files not to be included
 /_*.md
+
+# Shell scripts not to be included
+test_convert.sh

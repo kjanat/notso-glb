@@ -31,4 +31,28 @@
     },
     "pyright": { "disabled": true },
   },
+  "formatter": {
+    "dprint": {
+      "command": ["dprint", "fmt", "$FILE"],
+      "extensions": [
+        ".css",
+        ".html",
+        ".ipynb",
+        ".json",
+        ".jsonc",
+        ".less",
+        ".md",
+        ".py",
+        ".pyi",
+        ".sass",
+        ".scss",
+        ".toml",
+        ".ts",
+        ".tsx",
+        ".yaml",
+        ".yml",
+        "Dockerfile",
+      ],
+    },
+  },
 }

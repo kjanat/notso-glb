@@ -79,8 +79,20 @@ def run_gltfpack(
                 f"{ENV_FORCE_WASM} set but WASM runtime unavailable",
             )
         use_wasm = True
-    elif prefer_wasm and _wasm_available():
-        use_wasm = True
+    elif prefer_wasm:
+        if _wasm_available():
+            use_wasm = True
+        elif gltfpack:
+            print(
+                "[WARN] prefer_wasm=True but WASM unavailable, falling back to native"
+            )
+            use_wasm = False
+        else:
+            return (
+                False,
+                input_path,
+                "prefer_wasm=True but WASM unavailable and no native fallback",
+            )
     elif not gltfpack:
         if _wasm_available():
             use_wasm = True
