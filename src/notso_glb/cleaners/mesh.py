@@ -1,7 +1,5 @@
 """Mesh cleanup and decimation functions."""
 
-from typing import Literal
-
 import bpy  # type: ignore[import-untyped]
 from bpy.types import Modifier, Object
 

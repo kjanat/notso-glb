@@ -37,5 +37,5 @@ DEFAULT_CONFIG: OptimizationConfig = {
     "analyze_animations": True,  # Find static bones (slow but saves MB)
     "check_bloat": True,  # Detect unreasonable mesh complexity
     "experimental_autofix": False,  # [EXPERIMENTAL] Auto-decimate props
-    "quiet": False,  # Minimize console output
+    "quiet": True,  # Minimize console output
 }
