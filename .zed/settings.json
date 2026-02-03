@@ -1,7 +1,36 @@
 {
   "languages": {
     "Python": {
-      "language_servers": ["!basedpyright", "!pylsp", "ty", "ruff", "..."]
-    }
-  }
+      "language_servers": ["pylsp", "ty", "ruff", "!basedpyright", "..."],
+    },
+  },
+  "context_servers": {
+    "blender": {
+      "enabled": false,
+      "command": "uv",
+      "args": ["run", "blender-mcp"],
+      "env": { "UV_PROJECT": "~/projects/blender-mcp" },
+    },
+    "blender-git": {
+      "enabled": true,
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/kjanat/blender-mcp",
+        "blender-mcp",
+      ],
+      "env": {},
+    },
+  },
+  "lsp": {
+    "pylsp": {
+      "initialization_options": {
+        "pylsp": {
+          "plugins": {
+            "pycodestyle": { "ignore": ["E203"] },
+          },
+        },
+      },
+    },
+  },
 }

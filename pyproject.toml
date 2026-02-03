@@ -3,7 +3,7 @@ name            = "notso-glb"
 version         = "0.1.0"
 description     = "GLB Export Optimizer for Mascot Models"
 readme          = "README.md"
-requires-python = "==3.11.*"
+requires-python = "~=3.11.0"
 authors         = [{ name = "Kaj Kowalski", email = "info@kajkowalski.nl" }]
 keywords        = ["3d", "blender", "compression", "draco", "glb", "gltf", "mascot", "optimization", "webgl"]
 classifiers     = [
@@ -12,29 +12,38 @@ classifiers     = [
   "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Topic :: Multimedia :: Graphics :: 3D Modeling",
   "Topic :: Multimedia :: Graphics :: Graphics Conversion"
 ]
 dependencies    = [
-  "bpy>=5,<6",
+  "bpy>=5,<6; python_version ~= '3.11.0'",
   "rich>=14.2.0",
   "typer>=0.20.1",
+  "wasmtime>=41.0.0",
 ]
 
 [project.scripts]
 notso-glb = "notso_glb:main"
 
-[project.optional-dependencies]
-wasm = ["wasmtime>=41.0.0"]
-
 [dependency-groups]
-dev = [
-  "fake-bpy-module>=20251003",
-  "pytest>=9.0.2",
-  "pytest-cov>=7.0.0",
+dev   = [
+  { include-group = "lint" },
+  { include-group = "test" },
+  { include-group = "types" },
+]
+lint  = [
   "ruff>=0.14.10",
   "tombi>=0.7.26",
+  "ty>=0.0.5",
+]
+test  = [
+  "pytest>=9.0.2",
+  "pytest-cov>=7.0.0",
+]
+types = [
+  "fake-bpy-module>=20251003",
   "ty>=0.0.5",
 ]
 
@@ -49,7 +58,6 @@ strict     = true
 testpaths  = ["tests"]
 
 [tool.ruff]
-# Same as Black.
 line-length    = 88
 indent-width   = 4
 target-version = "py311"
@@ -58,7 +66,6 @@ target-version = "py311"
 preview   = true
 select    = ["E4", "E7", "E9", "F", "F", "B", "UP"]
 ignore    = []
-# Allow fix for all enabled rules (when `--fix`) is provided.
 fixable   = ["ALL"]
 unfixable = []
 
@@ -71,5 +78,8 @@ line-ending                = "lf"
 docstring-code-format      = true
 docstring-code-line-length = "dynamic"
 
-[tool.uv_build]
-data = ["src/notso_glb/wasm/*.wasm"]
+[tool.uv]
+default-groups = "all"
+
+[tool.uv.build-backend]
+source-include = ["src/notso_glb/wasm/**"]

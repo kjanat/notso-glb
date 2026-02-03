@@ -9,6 +9,16 @@
         "UV_PROJECT": "~/projects/blender-mcp",
       },
     },
+    "blender-git": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--from",
+        "git+https://github.com/kjanat/blender-mcp",
+        "blender-mcp",
+      ],
+      "enabled": true,
+    },
   },
   "lsp": {
     "ruff": {
