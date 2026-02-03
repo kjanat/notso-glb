@@ -13,3 +13,6 @@ wheels/
 *.gltf
 *.glb
 *.bin
+
+# Markdown files not to be included
+/_*.md
