@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+---
+issue_enrichment:
+  auto_enrich: { enabled: true }
+  labeling:
+    auto_apply_labels: true
+    labeling_instructions:
+      # Type labels
+      - label: bug
+        instructions: Apply when something isn't working
+      - label: feature
+        instructions: Apply for new feature or request
+      - label: docs
+        instructions: Apply for documentation improvements
+      - label: refactor
+        instructions: Apply for code refactoring without functionality changes
+      - label: performance
+        instructions: Apply for performance improvements
+      # Priority labels
+      - label: "priority: critical"
+        instructions: Apply when issue must be fixed ASAP
+      - label: "priority: high"
+        instructions: Apply for high priority issues
+      - label: "priority: low"
+        instructions: Apply for low priority issues
+      # Status labels
+      - label: "status: blocked"
+        instructions: Apply when blocked by another issue or external factor
+      - label: "status: needs-info"
+        instructions: Apply when needs more information from reporter
+      - label: "status: wontfix"
+        instructions: Apply when this will not be worked on
+      # Component labels
+      - label: "component: cli"
+        instructions: Apply when related to CLI interface
+      - label: "component: export"
+        instructions: Apply when related to GLB/glTF export
+      - label: "component: analysis"
+        instructions: Apply when related to mesh/bone analysis
+      - label: "component: textures"
+        instructions: Apply when related to texture processing
+      # Misc labels
+      - label: good first issue
+        instructions: Apply for issues good for newcomers
+      - label: help wanted
+        instructions: Apply when extra attention is needed
+      - label: duplicate
+        instructions: Apply when this issue or PR already exists
+      - label: invalid
+        instructions: Apply when this doesn't seem right
