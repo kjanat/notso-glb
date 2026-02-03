@@ -2,7 +2,7 @@
 
 import re
 
-import bpy  # type: ignore[import-untyped]
+import bpy
 
 
 def auto_fix_duplicate_names(

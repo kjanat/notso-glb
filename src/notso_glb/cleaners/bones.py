@@ -1,6 +1,6 @@
 """Bone cleanup functions."""
 
-import bpy  # type: ignore[import-untyped]
+import bpy
 from bpy.types import Object
 
 from notso_glb.analyzers.bones import get_bones_used_for_skinning

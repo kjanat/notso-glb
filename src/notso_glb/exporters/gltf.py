@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
-import bpy  # type: ignore[import-untyped]
+import bpy
 
 from notso_glb.analyzers import (
     analyze_bone_animation,

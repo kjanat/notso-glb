@@ -2,7 +2,7 @@
 
 from typing import cast
 
-import bpy  # type: ignore[import-untyped]
+import bpy
 from bpy.types import Armature, Mesh, Object, Scene, ViewLayer
 
 

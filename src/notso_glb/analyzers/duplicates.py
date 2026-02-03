@@ -2,7 +2,7 @@
 
 from collections import Counter, defaultdict
 
-import bpy  # type: ignore[import-untyped]
+import bpy
 
 from notso_glb.utils import sanitize_gltf_name
 

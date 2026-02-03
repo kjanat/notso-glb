@@ -2,7 +2,7 @@
 
 from typing import cast
 
-import bpy  # type: ignore[import-untyped]
+import bpy
 
 from notso_glb.utils import get_mesh_data
 

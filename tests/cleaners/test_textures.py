@@ -1,6 +1,6 @@
 """Tests for texture cleanup module."""
 
-import bpy  # type: ignore[import-untyped]
+import bpy
 
 
 class TestResizeTextures:

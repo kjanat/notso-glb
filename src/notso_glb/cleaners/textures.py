@@ -1,6 +1,6 @@
 """Texture resizing functions."""
 
-import bpy  # type: ignore[import-untyped]
+import bpy
 
 from notso_glb.utils.logging import bright_cyan, dim, log_detail, log_warn, magenta
 

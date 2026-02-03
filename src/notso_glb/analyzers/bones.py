@@ -1,6 +1,6 @@
 """Bone animation analysis for detecting static bones."""
 
-import bpy  # type: ignore[import-untyped]
+import bpy
 from bpy.types import Object
 
 from notso_glb.utils import get_scene, get_view_layer
@@ -83,13 +83,13 @@ def analyze_bone_animation() -> set[str]:
             end_rot_q = bone.rotation_quaternion.copy()
             end_rot_e = bone.rotation_euler.copy()
 
-            loc_diff = (end_loc - start_loc).length  # ty: ignore[unsupported-operator]
+            loc_diff = (end_loc - start_loc).length
             if rot_mode == "QUATERNION":
-                rot_diff = (end_rot_q - start_rot_q).magnitude  # ty: ignore[unsupported-operator]
+                rot_diff = (end_rot_q - start_rot_q).magnitude
             else:
                 rot_diff = (
                     end_rot_e.to_quaternion() - start_rot_e.to_quaternion()
-                ).magnitude  # ty: ignore[unsupported-operator]
+                ).magnitude
 
             bone_movement[bone.name] += loc_diff + rot_diff
 

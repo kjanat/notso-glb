@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import cast
 
-import bpy  # type: ignore[import-untyped]
+import bpy
 import pytest
 from bpy.types import Image, Mesh, Object
 

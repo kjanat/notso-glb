@@ -1,6 +1,6 @@
 """Tests for duplicate name cleanup module."""
 
-import bpy  # type: ignore[import-untyped]
+import bpy
 from bpy.types import Object
 
 
