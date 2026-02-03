@@ -1,22 +1,12 @@
 [project]
-name = "notso-glb"
-version = "0.1.0"
-description = "GLB Export Optimizer for Mascot Models"
-readme = "README.md"
+name            = "notso-glb"
+version         = "0.1.0"
+description     = "GLB Export Optimizer for Mascot Models"
+readme          = "README.md"
 requires-python = "==3.11.*"
-authors = [{ name = "Kaj Kowalski", email = "info@kajkowalski.nl" }]
-keywords = [
-  "3d",
-  "blender",
-  "compression",
-  "draco",
-  "glb",
-  "gltf",
-  "mascot",
-  "optimization",
-  "webgl"
-]
-classifiers = [
+authors         = [{ name = "Kaj Kowalski", email = "info@kajkowalski.nl" }]
+keywords        = ["3d", "blender", "compression", "draco", "glb", "gltf", "mascot", "optimization", "webgl"]
+classifiers     = [
   "Development Status :: 4 - Beta",
   "Environment :: Console",
   "Intended Audience :: Developers",
@@ -26,7 +16,7 @@ classifiers = [
   "Topic :: Multimedia :: Graphics :: 3D Modeling",
   "Topic :: Multimedia :: Graphics :: Graphics Conversion"
 ]
-dependencies = [
+dependencies    = [
   "bpy>=5,<6",
   "rich>=14.2.0",
   "typer>=0.20.1",
@@ -34,6 +24,9 @@ dependencies = [
 
 [project.scripts]
 notso-glb = "notso_glb:main"
+
+[project.optional-dependencies]
+wasm = ["wasmtime>=41.0.0"]
 
 [dependency-groups]
 dev = [
@@ -46,34 +39,37 @@ dev = [
 ]
 
 [build-system]
-requires = ["uv_build>=0.9.18,<0.10.0"]
+requires      = ["uv_build>=0.9.18,<0.10.0"]
 build-backend = "uv_build"
 
 [tool.pytest]
-addopts = ["--cov", "--import-mode=importlib", "-ra"]
+addopts    = ["--cov", "--import-mode=importlib", "-ra"]
 minversion = "9.0"
-strict = true
-testpaths = ["tests"]
+strict     = true
+testpaths  = ["tests"]
 
 [tool.ruff]
 # Same as Black.
-line-length = 88
-indent-width = 4
+line-length    = 88
+indent-width   = 4
 target-version = "py311"
 
 [tool.ruff.lint]
-preview = true
-select = ["E4", "E7", "E9", "F", "F", "B", "UP"]
-ignore = []
+preview   = true
+select    = ["E4", "E7", "E9", "F", "F", "B", "UP"]
+ignore    = []
 # Allow fix for all enabled rules (when `--fix`) is provided.
-fixable = ["ALL"]
+fixable   = ["ALL"]
 unfixable = []
 
 [tool.ruff.format]
-preview = true
-quote-style = "double"
-indent-style = "space"
-skip-magic-trailing-comma = false
-line-ending = "lf"
-docstring-code-format = true
+preview                    = true
+quote-style                = "double"
+indent-style               = "space"
+skip-magic-trailing-comma  = false
+line-ending                = "lf"
+docstring-code-format      = true
 docstring-code-line-length = "dynamic"
+
+[tool.uv_build]
+data = ["src/notso_glb/wasm/*.wasm"]

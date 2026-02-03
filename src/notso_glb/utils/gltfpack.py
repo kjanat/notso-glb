@@ -1,5 +1,7 @@
 """Wrapper for gltfpack mesh/texture compression tool."""
 
+from __future__ import annotations
+
 import shutil
 import subprocess
 import traceback
@@ -11,6 +13,16 @@ def find_gltfpack() -> str | None:
     return shutil.which("gltfpack")
 
 
+def _wasm_available() -> bool:
+    """Check if WASM fallback is available."""
+    try:
+        from notso_glb.wasm import is_available
+
+        return is_available()
+    except ImportError:
+        return False
+
+
 def run_gltfpack(
     input_path: Path,
     output_path: Path | None = None,
@@ -19,6 +31,7 @@ def run_gltfpack(
     mesh_compress: bool = True,
     simplify_ratio: float | None = None,
     texture_quality: int | None = None,
+    prefer_wasm: bool = False,
 ) -> tuple[bool, Path, str]:
     """
     Run gltfpack on a GLB/glTF file.
@@ -30,13 +43,33 @@ def run_gltfpack(
         mesh_compress: Enable mesh compression (-cc)
         simplify_ratio: Simplify meshes to ratio (0.0-1.0), None = no simplify
         texture_quality: Texture quality 1-10, None = default
+        prefer_wasm: Prefer WASM over native binary (default: False)
 
     Returns:
         Tuple of (success, output_path, message)
     """
     gltfpack = find_gltfpack()
-    if not gltfpack:
-        return False, input_path, "gltfpack not found in PATH"
+    use_wasm = False
+
+    if prefer_wasm and _wasm_available():
+        use_wasm = True
+    elif not gltfpack:
+        if _wasm_available():
+            use_wasm = True
+        else:
+            return False, input_path, "gltfpack not found and WASM fallback unavailable"
+
+    if use_wasm:
+        from notso_glb.wasm import run_gltfpack_wasm
+
+        return run_gltfpack_wasm(
+            input_path,
+            output_path,
+            texture_compress=texture_compress,
+            mesh_compress=mesh_compress,
+            simplify_ratio=simplify_ratio,
+            texture_quality=texture_quality,
+        )
 
     input_path = Path(input_path)
     if not input_path.is_file():
