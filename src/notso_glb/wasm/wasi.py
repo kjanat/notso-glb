@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from typing import Any
 
 from .constants import WASI_EBADF
+from .constants import WASI_EFAULT
 from .constants import WASI_EINVAL
 from .constants import WASI_EIO
 from .constants import WASI_ENOSYS
@@ -56,9 +57,11 @@ class WasiFilesystem:
 
     def _get_memory(self) -> Memory:
         """Get WASM memory export."""
+        if self._instance is None or self._store is None:
+            raise RuntimeError("[ERROR] WASI runtime is not initialized")
         from wasmtime import Memory
 
-        exports: Any = self._instance.exports(self._store)  # type: ignore[union-attr]
+        exports: Any = self._instance.exports(self._store)
         memory = exports["memory"]
         assert isinstance(memory, Memory)
         return memory
@@ -142,7 +145,13 @@ class WasiFilesystem:
         # Validate stat buffer can hold fdstat struct (24 bytes)
         self._check_bounds("wasi_fd_fdstat_get", stat, 24)
         fd_info = self._fds[fd]
-        filetype = 3 if "path" in fd_info else 4
+        # Determine filetype: 2=char device, 3=directory, 4=regular file
+        if fd_info.get("type") == "output":
+            filetype = 2  # character device (stdout/stderr)
+        elif "path" in fd_info:
+            filetype = 3  # directory
+        else:
+            filetype = 4  # regular file
         self._set_u8(stat + 0, filetype)
         self._set_u32(stat + 2, 0)
         self._set_u32(stat + 8, 0)
@@ -169,7 +178,7 @@ class WasiFilesystem:
 
         file_path = self._fds[parent_fd]["path"] + self._get_string(path, path_len)
 
-        file_info: dict = {
+        file_info: dict[str, Any] = {
             "name": file_path,
             "position": 0,
         }
@@ -225,6 +234,11 @@ class WasiFilesystem:
 
         self._refresh_memory()
         assert self._memory_array is not None
+
+        # Bounds check: ensure destination range is within memory
+        if path < 0 or path + path_len > len(self._memory_array):
+            return WASI_EFAULT
+
         for i, b in enumerate(mount):
             self._memory_array[path + i] = b
         return 0

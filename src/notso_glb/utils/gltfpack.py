@@ -5,15 +5,15 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
-import traceback
 from pathlib import Path
+from typing import TypeAlias
 
 # Environment variables to force a specific backend (for testing)
-ENV_FORCE_NATIVE = "NOTSO_GLB_FORCE_GLTFPACK_NATIVE"
-ENV_FORCE_WASM = "NOTSO_GLB_FORCE_GLTFPACK_WASM"
+ENV_FORCE_NATIVE: str = "NOTSO_GLB_FORCE_GLTFPACK_NATIVE"
+ENV_FORCE_WASM: str = "NOTSO_GLB_FORCE_GLTFPACK_WASM"
 
 # Result type alias for clarity
-GltfpackResult = tuple[bool, Path, str]
+GltfpackResult: TypeAlias = tuple[bool, Path, str]
 
 
 def find_gltfpack() -> str | None:
@@ -133,14 +133,31 @@ def _validate_texture_quality(
     """Validate texture_quality, return (validated_value, error_or_none)."""
     if quality is None:
         return None, None
-    try:
-        quality = int(quality)
-    except (TypeError, ValueError):
+    # Reject bool explicitly (bool is subclass of int)
+    if isinstance(quality, bool):
         return None, (
             False,
             input_path,
-            f"texture_quality must be an integer, got {type(quality).__name__}",
+            "texture_quality must be an integer, bool provided",
         )
+    # Reject non-integer floats
+    if isinstance(quality, float):
+        if not quality.is_integer():
+            return None, (
+                False,
+                input_path,
+                "texture_quality must be an integer, non-integer float provided",
+            )
+        quality = int(quality)
+    else:
+        try:
+            quality = int(quality)
+        except (TypeError, ValueError):
+            return None, (
+                False,
+                input_path,
+                f"texture_quality must be an integer, got {type(quality).__name__}",
+            )
     if not (1 <= quality <= 10):
         return None, (
             False,
@@ -176,12 +193,6 @@ def _run_native_gltfpack(
         return False, output_path, f"gltfpack subprocess error: {e}"
     except OSError as e:
         return False, output_path, f"gltfpack OS error (cmd={cmd}): {e}"
-    except Exception as e:
-        return (
-            False,
-            output_path,
-            f"gltfpack unexpected error: {e}\n{traceback.format_exc()}",
-        )
 
 
 def run_gltfpack(
