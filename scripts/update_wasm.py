@@ -88,7 +88,8 @@ def update_bundle(target_version: str | None = None) -> tuple[bool, str]:
     tarball_url, version = get_version_info(target_version)
     current_version = get_bundled_version()
 
-    if current_version == version and target_version is None:
+    # Skip download only if version matches AND wasm file exists
+    if current_version == version and target_version is None and BUNDLE_PATH.exists():
         return False, f"Already at latest version: {version}"
 
     print(f"[INFO] Downloading gltfpack WASM v{version} from npm...")
