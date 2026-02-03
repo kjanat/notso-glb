@@ -16,7 +16,7 @@
       "enabled": false,
       "command": "uv",
       "args": ["run", "blender-mcp"],
-      "env": { "UV_PROJECT": "~/projects/blender-mcp" }
+      "env": { "UV_PROJECT": "/home/kjanat/projects/blender-mcp" }
     },
     "blender-git": {
       "enabled": true,

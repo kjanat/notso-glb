@@ -14,6 +14,8 @@ jobs:
       - uses: astral-sh/setup-uv@v7
       - name: install dprint
         run: curl -fsSL https://dprint.dev/install.sh | sh >/dev/null 2>&1
+      - name: install shfmt
+        run: sudo apt-get install -y shfmt >/dev/null 2>&1
 
       - run: uvx ruff check --fix-only
       - run: '"$HOME/.dprint/bin/dprint" fmt --allow-no-files --diff --excludes ".github"'
