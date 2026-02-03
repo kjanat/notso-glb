@@ -88,9 +88,9 @@ def decimate_mesh(obj: Object, target_verts: int) -> tuple[int, int] | None:
     ratio: float = target_verts / original_verts
 
     mod: Modifier = obj.modifiers.new(name="AutoDecimate", type="DECIMATE")
-    mod.decimate_type = Literal["COLLAPSE"]  # ty:ignore[unresolved-attribute]
+    mod.decimate_type = "COLLAPSE"  # ty:ignore[unresolved-attribute]
     mod.ratio = ratio  # ty:ignore[unresolved-attribute]
-    mod.use_collapse_triangulate = Literal[True]  # ty:ignore[unresolved-attribute]
+    mod.use_collapse_triangulate = True  # ty:ignore[unresolved-attribute]
 
     view_layer = get_view_layer()
     view_layer.objects.active = obj  # type: ignore[assignment]
