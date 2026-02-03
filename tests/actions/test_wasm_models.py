@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -27,7 +27,15 @@ class TestGetBundledVersion:
     def test_returns_version_from_file(self, tmp_path: Path) -> None:
         """Should return version from file."""
         # Import the test module
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent / ".github" / "actions" / "test-wasm-models"))
+        sys.path.insert(
+            0,
+            str(
+                Path(__file__).parent.parent.parent
+                / ".github"
+                / "actions"
+                / "test-wasm-models"
+            ),
+        )
 
         try:
             from test import get_bundled_version, VERSION_PATH
@@ -155,7 +163,7 @@ class TestMain:
         mock_wasm_path: MagicMock,
         mock_is_avail: MagicMock,
         tmp_path: Path,
-        capsys
+        capsys,
     ) -> None:
         """Should display WASM version and path info."""
         try:
@@ -191,7 +199,7 @@ class TestMain:
         mock_version: MagicMock,
         mock_wasm_path: MagicMock,
         mock_is_avail: MagicMock,
-        tmp_path: Path
+        tmp_path: Path,
     ) -> None:
         """Should process .glb files."""
         try:
@@ -231,7 +239,7 @@ class TestMain:
         mock_version: MagicMock,
         mock_wasm_path: MagicMock,
         mock_is_avail: MagicMock,
-        tmp_path: Path
+        tmp_path: Path,
     ) -> None:
         """Should process .gltf files."""
         try:
@@ -270,7 +278,7 @@ class TestMain:
         mock_version: MagicMock,
         mock_wasm_path: MagicMock,
         mock_is_avail: MagicMock,
-        tmp_path: Path
+        tmp_path: Path,
     ) -> None:
         """Should respect MAX_MODELS limit."""
         try:
@@ -310,7 +318,7 @@ class TestMain:
         mock_version: MagicMock,
         mock_wasm_path: MagicMock,
         mock_is_avail: MagicMock,
-        tmp_path: Path
+        tmp_path: Path,
     ) -> None:
         """Should skip files larger than MAX_FILE_SIZE."""
         try:
@@ -347,7 +355,7 @@ class TestMain:
         mock_version: MagicMock,
         mock_wasm_path: MagicMock,
         mock_is_avail: MagicMock,
-        tmp_path: Path
+        tmp_path: Path,
     ) -> None:
         """Should return error when unexpected failures occur."""
         try:
@@ -387,7 +395,7 @@ class TestMain:
         mock_wasm_path: MagicMock,
         mock_is_avail: MagicMock,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Should write results to GITHUB_OUTPUT."""
         try:
@@ -433,7 +441,7 @@ class TestMain:
         mock_version: MagicMock,
         mock_wasm_path: MagicMock,
         mock_is_avail: MagicMock,
-        tmp_path: Path
+        tmp_path: Path,
     ) -> None:
         """Should handle exceptions during processing."""
         try:

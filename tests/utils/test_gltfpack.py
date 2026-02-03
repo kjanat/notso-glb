@@ -6,8 +6,6 @@ import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 
 class TestFindGltfpack:
     """Tests for find_gltfpack function."""
@@ -40,7 +38,9 @@ class TestSelectBackend:
     """Tests for _select_backend function."""
 
     @patch("notso_glb.utils.gltfpack._wasm_available")
-    def test_forces_native_backend(self, mock_wasm_avail: MagicMock, tmp_path: Path) -> None:
+    def test_forces_native_backend(
+        self, mock_wasm_avail: MagicMock, tmp_path: Path
+    ) -> None:
         """Should force native backend when ENV_FORCE_NATIVE is set."""
         from notso_glb.utils.gltfpack import _select_backend
 
@@ -54,7 +54,9 @@ class TestSelectBackend:
         assert error is None
 
     @patch("notso_glb.utils.gltfpack._wasm_available")
-    def test_forces_wasm_backend(self, mock_wasm_avail: MagicMock, tmp_path: Path) -> None:
+    def test_forces_wasm_backend(
+        self, mock_wasm_avail: MagicMock, tmp_path: Path
+    ) -> None:
         """Should force WASM backend when ENV_FORCE_WASM is set."""
         from notso_glb.utils.gltfpack import _select_backend
 
@@ -88,7 +90,9 @@ class TestSelectBackend:
         assert error[0] is False
 
     @patch("notso_glb.utils.gltfpack._wasm_available")
-    def test_prefers_native_by_default(self, mock_wasm_avail: MagicMock, tmp_path: Path) -> None:
+    def test_prefers_native_by_default(
+        self, mock_wasm_avail: MagicMock, tmp_path: Path
+    ) -> None:
         """Should prefer native over WASM by default."""
         from notso_glb.utils.gltfpack import _select_backend
 
@@ -334,7 +338,9 @@ class TestRunNativeGltfpack:
         assert msg == "Success"
 
     @patch("notso_glb.utils.gltfpack.subprocess.run")
-    def test_handles_nonzero_returncode(self, mock_run: MagicMock, tmp_path: Path) -> None:
+    def test_handles_nonzero_returncode(
+        self, mock_run: MagicMock, tmp_path: Path
+    ) -> None:
         """Should handle non-zero return code."""
         from notso_glb.utils.gltfpack import _run_native_gltfpack
 
@@ -363,7 +369,9 @@ class TestRunNativeGltfpack:
         assert "timed out" in msg.lower()
 
     @patch("notso_glb.utils.gltfpack.subprocess.run")
-    def test_handles_subprocess_error(self, mock_run: MagicMock, tmp_path: Path) -> None:
+    def test_handles_subprocess_error(
+        self, mock_run: MagicMock, tmp_path: Path
+    ) -> None:
         """Should handle subprocess errors."""
         from notso_glb.utils.gltfpack import _run_native_gltfpack
 
@@ -427,7 +435,9 @@ class TestRunGltfpack:
 
         input_path = tmp_path / "nonexistent.glb"
 
-        with patch("notso_glb.utils.gltfpack.find_gltfpack", return_value="/usr/bin/gltfpack"):
+        with patch(
+            "notso_glb.utils.gltfpack.find_gltfpack", return_value="/usr/bin/gltfpack"
+        ):
             success, path, msg = run_gltfpack(input_path)
 
         assert success is False
@@ -568,7 +578,9 @@ class TestEdgeCases:
         input_path = tmp_path / "input.glb"
         input_path.write_bytes(b"test")
 
-        with patch("notso_glb.utils.gltfpack.find_gltfpack", return_value="/usr/bin/gltfpack"):
+        with patch(
+            "notso_glb.utils.gltfpack.find_gltfpack", return_value="/usr/bin/gltfpack"
+        ):
             with patch("notso_glb.utils.gltfpack._run_native_gltfpack") as mock_run:
                 mock_run.return_value = (True, input_path, "Success")
                 success, path, msg = run_gltfpack(input_path, simplify_ratio=0.0)
@@ -582,7 +594,9 @@ class TestEdgeCases:
         input_path = tmp_path / "input.glb"
         input_path.write_bytes(b"test")
 
-        with patch("notso_glb.utils.gltfpack.find_gltfpack", return_value="/usr/bin/gltfpack"):
+        with patch(
+            "notso_glb.utils.gltfpack.find_gltfpack", return_value="/usr/bin/gltfpack"
+        ):
             with patch("notso_glb.utils.gltfpack._run_native_gltfpack") as mock_run:
                 mock_run.return_value = (True, input_path, "Success")
                 success, path, msg = run_gltfpack(input_path, simplify_ratio=1.0)

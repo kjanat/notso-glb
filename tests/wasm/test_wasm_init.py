@@ -5,8 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 
 class TestGetWasmPath:
     """Tests for get_wasm_path function."""
@@ -41,7 +39,9 @@ class TestIsAvailable:
         assert isinstance(result, bool)
 
     @patch("notso_glb.wasm._get_wasm_path")
-    def test_returns_false_when_wasm_missing(self, mock_get_path: MagicMock, tmp_path: Path) -> None:
+    def test_returns_false_when_wasm_missing(
+        self, mock_get_path: MagicMock, tmp_path: Path
+    ) -> None:
         """Should return False when WASM file doesn't exist."""
         from notso_glb.wasm import is_available
 
@@ -189,7 +189,11 @@ class TestRunGltfpackWasm:
     @patch("notso_glb.wasm.is_available")
     @patch("notso_glb.wasm.get_gltfpack")
     def test_skips_texture_compress_with_warning(
-        self, mock_get_gltfpack: MagicMock, mock_is_avail: MagicMock, tmp_path: Path, capsys
+        self,
+        mock_get_gltfpack: MagicMock,
+        mock_is_avail: MagicMock,
+        tmp_path: Path,
+        capsys,
     ) -> None:
         """Should skip texture_compress and print warning."""
         from notso_glb.wasm import run_gltfpack_wasm

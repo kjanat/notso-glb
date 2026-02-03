@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -189,16 +188,12 @@ class TestMain:
         from scripts.generate_docs import main
 
         # Mock subprocess for typer docs
-        mock_run.return_value = MagicMock(
-            stdout="# `notso-glb`\n\n$ notso-glb --help"
-        )
+        mock_run.return_value = MagicMock(stdout="# `notso-glb`\n\n$ notso-glb --help")
 
         # Mock Path operations
         mock_output_path = MagicMock()
         mock_path.return_value.parent.parent = MagicMock()
-        mock_path.return_value.parent.parent.__truediv__.return_value = (
-            mock_output_path
-        )
+        mock_path.return_value.parent.parent.__truediv__.return_value = mock_output_path
 
         main()
 

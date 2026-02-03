@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -321,7 +320,7 @@ class TestWasiSyscalls:
 
         # Set up iovec: [ptr=50, len=5]
         fs._set_u32(0, 50)  # buffer ptr
-        fs._set_u32(4, 5)   # buffer len
+        fs._set_u32(4, 5)  # buffer len
 
         result = fs.wasi_fd_read(10, 0, 1, 10)
 
@@ -429,7 +428,7 @@ class TestEdgeCases:
 
         # Write 50 bytes
         fs._memory_array[0:50] = b"X" * 50
-        fs._set_u32(60, 0)   # buffer ptr
+        fs._set_u32(60, 0)  # buffer ptr
         fs._set_u32(64, 50)  # buffer len
 
         result = fs.wasi_fd_write(10, 60, 1, 70)

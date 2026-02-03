@@ -14,6 +14,7 @@ import pytest
 try:
     import bpy
     from bpy.types import Image, Mesh, Object
+
     HAS_BPY = True
 except ImportError:
     HAS_BPY = False

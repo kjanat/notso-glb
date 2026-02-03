@@ -6,7 +6,7 @@ import io
 import json
 import tarfile
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -71,8 +71,12 @@ class TestGetVersionInfo:
         mock_get_info.return_value = {
             "dist-tags": {"latest": "1.2.3"},
             "versions": {
-                "1.0.0": {"dist": {"tarball": "https://example.com/gltfpack-1.0.0.tgz"}},
-                "1.2.3": {"dist": {"tarball": "https://example.com/gltfpack-1.2.3.tgz"}},
+                "1.0.0": {
+                    "dist": {"tarball": "https://example.com/gltfpack-1.0.0.tgz"}
+                },
+                "1.2.3": {
+                    "dist": {"tarball": "https://example.com/gltfpack-1.2.3.tgz"}
+                },
             },
         }
 
@@ -89,11 +93,21 @@ class TestGetVersionInfo:
         mock_get_info.return_value = {
             "dist-tags": {"latest": "1.2.3"},
             "versions": {
-                "1.2.3": {"dist": {"tarball": "https://example.com/gltfpack-1.2.3.tgz"}},
-                "1.2.2": {"dist": {"tarball": "https://example.com/gltfpack-1.2.2.tgz"}},
-                "1.2.1": {"dist": {"tarball": "https://example.com/gltfpack-1.2.1.tgz"}},
-                "1.2.0": {"dist": {"tarball": "https://example.com/gltfpack-1.2.0.tgz"}},
-                "1.1.0": {"dist": {"tarball": "https://example.com/gltfpack-1.1.0.tgz"}},
+                "1.2.3": {
+                    "dist": {"tarball": "https://example.com/gltfpack-1.2.3.tgz"}
+                },
+                "1.2.2": {
+                    "dist": {"tarball": "https://example.com/gltfpack-1.2.2.tgz"}
+                },
+                "1.2.1": {
+                    "dist": {"tarball": "https://example.com/gltfpack-1.2.1.tgz"}
+                },
+                "1.2.0": {
+                    "dist": {"tarball": "https://example.com/gltfpack-1.2.0.tgz"}
+                },
+                "1.1.0": {
+                    "dist": {"tarball": "https://example.com/gltfpack-1.1.0.tgz"}
+                },
             },
         }
 
