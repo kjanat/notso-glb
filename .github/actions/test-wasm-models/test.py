@@ -36,8 +36,23 @@ def main() -> int:
     print("=== WASM gltfpack Test ===")
     print()
 
+    # Debug: show WASM path info
+    wasm_path = get_wasm_path()
+    print(f"DEBUG: WASM path: {wasm_path}")
+    print(f"DEBUG: WASM exists: {wasm_path.exists()}")
+    print(f"DEBUG: VERSION_PATH: {VERSION_PATH}")
+    print(f"DEBUG: VERSION exists: {VERSION_PATH.exists()}")
+    print()
+
     if not is_available():
         print("ERROR: WASM runtime not available")
+        # More debug info
+        try:
+            import wasmtime
+
+            print(f"DEBUG: wasmtime available: {wasmtime}")
+        except ImportError as e:
+            print(f"DEBUG: wasmtime import error: {e}")
         return 1
 
     wasm_path = get_wasm_path()
