@@ -13,6 +13,7 @@ def find_gltfpack() -> str | None:
 def run_gltfpack(
     input_path: Path,
     output_path: Path | None = None,
+    *,
     texture_compress: bool = True,
     mesh_compress: bool = True,
     simplify_ratio: float | None = None,
@@ -60,9 +61,19 @@ def run_gltfpack(
         cmd.append("-cc")
 
     if simplify_ratio is not None:
+        simplify_ratio = float(simplify_ratio)
+        if not (0.0 <= simplify_ratio <= 1.0):
+            raise ValueError(
+                f"simplify_ratio must be in [0.0, 1.0], got {simplify_ratio}"
+            )
         cmd.extend(["-si", str(simplify_ratio)])
 
     if texture_quality is not None:
+        texture_quality = int(texture_quality)
+        if not (1 <= texture_quality <= 10):
+            raise ValueError(
+                f"texture_quality must be in [1, 10], got {texture_quality}"
+            )
         cmd.extend(["-tq", str(texture_quality)])
 
     try:

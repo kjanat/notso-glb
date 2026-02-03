@@ -130,7 +130,7 @@ def optimize(
         bool,
         typer.Option(
             "--gltfpack/--no-gltfpack",
-            help="Post-process with gltfpack for extra compression",
+            help="Post-process with gltfpack for extra compression (enabled if gltfpack is installed)",
             rich_help_panel="Compression & Textures",
         ),
     ] = find_gltfpack() is not None,
@@ -216,7 +216,7 @@ def optimize(
 
     # Post-process with gltfpack if enabled
     if use_gltfpack:
-        from notso_glb.utils.gltfpack import find_gltfpack, run_gltfpack
+        from notso_glb.utils.gltfpack import run_gltfpack
         from notso_glb.utils.logging import format_bytes
 
         if not find_gltfpack():
@@ -234,7 +234,10 @@ def optimize(
 
             if success:
                 new_size = packed_path.stat().st_size
-                reduction = ((original_size - new_size) / original_size) * 100
+                if original_size == 0:
+                    reduction = 0.0
+                else:
+                    reduction = ((original_size - new_size) / original_size) * 100
                 console.print(
                     f"  [green]gltfpack:[/] {format_bytes(original_size)} -> "
                     f"{format_bytes(new_size)} ([bold green]-{reduction:.0f}%[/])"
