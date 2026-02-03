@@ -85,8 +85,9 @@ def run_gltfpack(
 
     output_path = Path(output_path)
 
-    # Build command
-    cmd = [gltfpack, "-i", str(input_path), "-o", str(output_path)]
+    # Build command (gltfpack is guaranteed non-None here due to early returns)
+    assert gltfpack is not None
+    cmd: list[str] = [gltfpack, "-i", str(input_path), "-o", str(output_path)]
 
     if texture_compress:
         cmd.append("-tc")
