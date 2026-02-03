@@ -40,37 +40,38 @@ def _fix_exact_duplicates(
     collection: Any,
     name: str,
     dtype: str,
-    processed: set[str],
+    processed_ids: set[int],
     renames: list[RenameRecord],
 ) -> None:
     """Rename exact duplicates by appending pointer suffix."""
     matching = [item for item in collection if item.name == name]
     for item in matching[1:]:
-        if item.name in processed:
+        if id(item) in processed_ids:
             continue
+        old_name = item.name
         new_name = f"{name}_{_get_ptr_suffix(item)}"
         item.name = new_name
-        processed.add(new_name)
-        renames.append({"type": dtype, "old": name, "new": new_name})
+        processed_ids.add(id(item))
+        renames.append({"type": dtype, "old": old_name, "new": new_name})
 
 
 def _fix_sanitization_collision(
     collection: Any,
     name_field: str,
     dtype: str,
-    processed: set[str],
+    processed_ids: set[int],
     renames: list[RenameRecord],
 ) -> None:
     """Rename colliding names from sanitization by appending pointer suffix."""
     colliding_names = _parse_colliding_names(name_field)
     for name in colliding_names[1:]:
         item = collection.get(name)
-        if not item or name in processed:
+        if not item or id(item) in processed_ids:
             continue
         base = re.sub(r"\.", "_", name)
         new_name = f"{base}_{_get_ptr_suffix(item)}"
         item.name = new_name
-        processed.add(new_name)
+        processed_ids.add(id(item))
         renames.append({"type": dtype, "old": name, "new": new_name})
 
 
@@ -85,7 +86,7 @@ def auto_fix_duplicate_names(
     Returns list of renames performed.
     """
     renames: list[RenameRecord] = []
-    processed: set[str] = set()
+    processed_ids: set[int] = set()
 
     for dup in duplicates:
         dtype = str(dup["type"])
@@ -100,10 +101,10 @@ def auto_fix_duplicate_names(
         name_field = str(dup["name"])
 
         if issue == "EXACT_DUPLICATE":
-            _fix_exact_duplicates(collection, name_field, dtype, processed, renames)
+            _fix_exact_duplicates(collection, name_field, dtype, processed_ids, renames)
         elif issue == "SANITIZATION_COLLISION":
             _fix_sanitization_collision(
-                collection, name_field, dtype, processed, renames
+                collection, name_field, dtype, processed_ids, renames
             )
 
     return renames

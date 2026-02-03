@@ -21,10 +21,11 @@ _SKIP_IMAGES = frozenset(["Render Result", "Viewer Node"])
 
 def _nearest_pot(n: int) -> int:
     """Round to nearest power of two."""
-    if n <= 0:
+    if n <= 1:
         return 1
-    lower = 1 << (n - 1).bit_length() - 1
-    upper = 1 << (n - 1).bit_length()
+    bl = (n - 1).bit_length()
+    lower = 1 << (bl - 1)
+    upper = 1 << bl
     return lower if (n - lower) < (upper - n) else upper
 
 
