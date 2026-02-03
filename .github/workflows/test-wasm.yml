@@ -1,123 +1,40 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+---
 name: Test WASM gltfpack
 
 on:
-  push:
-    branches: [master, feature/*]
-  pull_request:
-    branches: [master]
-  schedule:
-    # Weekly check for new gltfpack versions
-    - cron: "0 0 * * 0"
+  push: { branches: [master, "feature/*"] }
+  pull_request: { branches: [master] }
+  schedule: [{ cron: "0 0 * * 0" }] # Weekly check for new gltfpack versions
   workflow_dispatch:
+
+env: { UV_PYTHON: "3.11" }
 
 jobs:
   test-wasm:
     runs-on: ubuntu-latest
+    permissions: { contents: read }
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Checkout three.js test models
+        uses: actions/checkout@v6
+        with:
+          repository: mrdoob/three.js
+          path: test-models/three.js
+          sparse-checkout: examples/models/gltf
+          sparse-checkout-cone-mode: false
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
-        with:
-          version: "latest"
-
-      - name: Set up Python
-        run: uv python install 3.11
+        with: { activate-environment: true }
 
       - name: Install dependencies
         run: uv sync
 
-      - name: Fetch three.js glTF test models
-        run: |
-          mkdir -p test-models
-          cd test-models
-
-          # Clone sparse checkout of three.js examples/models/gltf
-          git clone --depth 1 --filter=blob:none --sparse \
-            https://github.com/mrdoob/three.js.git
-          cd three.js
-          git sparse-checkout set examples/models/gltf
-
-          # List available models
-          echo "Available test models:"
-          find examples/models/gltf -name "*.glb" -o -name "*.gltf" | head -20
-
       - name: Test WASM gltfpack on three.js models
-        run: |
-          uv run python -c "
-          import sys
-          from pathlib import Path
-          from notso_glb.wasm import is_available, get_wasm_path
-          from notso_glb.wasm.download import get_cached_version
-
-          # Check WASM availability
-          print('=== WASM gltfpack Test ===')
-          print()
-
-          if not is_available():
-              print('ERROR: WASM runtime not available')
-              sys.exit(1)
-
-          wasm_path = get_wasm_path()
-          version = get_cached_version()
-          print(f'WASM version: {version}')
-          print(f'WASM path: {wasm_path}')
-          print(f'WASM size: {wasm_path.stat().st_size / 1024:.1f} KB')
-          print()
-
-          # Find test models
-          model_dir = Path('test-models/three.js/examples/models/gltf')
-          models = list(model_dir.glob('**/*.glb')) + list(model_dir.glob('**/*.gltf'))
-          models = [m for m in models if m.stat().st_size < 10_000_000]  # Skip >10MB
-          print(f'Found {len(models)} test models (<10MB)')
-          print()
-
-          # Test each model
-          from notso_glb.wasm import run_gltfpack_wasm
-          import tempfile
-
-          passed = 0
-          failed = 0
-          skipped = 0
-
-          for model in sorted(models)[:30]:  # Test up to 30 models
-              rel_path = model.relative_to(model_dir)
-              size_kb = model.stat().st_size / 1024
-
-              with tempfile.NamedTemporaryFile(suffix='.glb', delete=True) as tmp:
-                  out_path = Path(tmp.name)
-                  try:
-                      success, _, msg = run_gltfpack_wasm(
-                          model, out_path,
-                          texture_compress=False,  # WASM lacks BasisU
-                          mesh_compress=True,
-                      )
-                      if success:
-                          out_size = out_path.stat().st_size / 1024
-                          delta = (1 - out_size / size_kb) * 100 if size_kb > 0 else 0
-                          print(f'  PASS {rel_path}: {size_kb:.1f}KB -> {out_size:.1f}KB ({delta:+.1f}%)')
-                          passed += 1
-                      else:
-                          # Some failures are expected (Draco input, etc.)
-                          if 'Draco' in msg or 'requires' in msg:
-                              print(f'  SKIP {rel_path}: {msg[:60]}')
-                              skipped += 1
-                          else:
-                              print(f'  FAIL {rel_path}: {msg[:80]}')
-                              failed += 1
-                  except Exception as e:
-                      print(f'  ERROR {rel_path}: {e}')
-                      failed += 1
-
-          print()
-          print(f'Results: {passed} passed, {failed} failed, {skipped} skipped')
-
-          if failed > len(models) * 0.2:  # Allow up to 20% failures
-              print('ERROR: Too many failures')
-              sys.exit(1)
-
-          print('SUCCESS')
-          "
+        run: uv run python scripts/test_wasm_models.py
 
       - name: Report WASM version
         if: always()
@@ -125,6 +42,4 @@ jobs:
           echo "### WASM gltfpack Test Results" >> $GITHUB_STEP_SUMMARY
           uv run python -c "
           from notso_glb.wasm.download import get_cached_version
-          version = get_cached_version() or 'unknown'
-          print(f'- **gltfpack WASM version**: {version}')
-          " >> $GITHUB_STEP_SUMMARY
+          print(f'- **gltfpack WASM version**: {get_cached_version() or \"unknown\"}')" >> $GITHUB_STEP_SUMMARY
