@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Generate CLI documentation from Typer app and clean up the output."""
 
 import re

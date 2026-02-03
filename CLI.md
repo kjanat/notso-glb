@@ -23,6 +23,7 @@ notso-glb [OPTIONS] FILE
 * `--analyze-animations / --skip-animation-analysis`: Analyze bones for static/animated properties  \[default: analyze-animations\]
 * `--check-bloat / --skip-bloat-check`: Analyze meshes for unreasonable complexity  \[default: check-bloat\]
 * `--autofix / --stable`: Auto-decimate bloated props, remove unused UVs  \[default: stable\]
-* `-q, --quiet / -v, --verbose`: Suppress Blender's verbose output (show only warnings/errors)  \[default: verbose\]
+* `--gltfpack / --no-gltfpack`: Post-process with gltfpack for extra compression (enabled if gltfpack is installed)  \[default: gltfpack\]
+* `-q, --quiet / -v, --verbose`: Suppress Blender's verbose output (show only warnings/errors)  \[default: quiet\]
 * `-V, --version`: Show the version and exit.
 * `--help`: Show this message and exit.

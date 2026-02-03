@@ -1,6 +1,6 @@
 """Vertex group cleanup functions."""
 
-import bpy  # type: ignore[import-untyped]
+import bpy
 
 from notso_glb.utils import get_mesh_data
 

@@ -1,9 +1,6 @@
 """Skinned mesh parent hierarchy analysis."""
 
-from typing import cast
-
-import bpy  # type: ignore[import-untyped]
-from bpy.types import Object
+import bpy
 
 
 def analyze_skinned_mesh_parents() -> list[dict[str, object]]:
@@ -27,7 +24,7 @@ def analyze_skinned_mesh_parents() -> list[dict[str, object]]:
             continue
 
         # Check if it has a parent (not at root)
-        parent = cast(Object | None, obj.parent)
+        parent = obj.parent
         if parent is not None:
             # Check if parent has non-identity transform
             has_transform = (

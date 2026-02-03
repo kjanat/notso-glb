@@ -16,6 +16,7 @@ except PackageNotFoundError:
     __version__ = "unknown"
 
 from notso_glb.utils.constants import DEFAULT_CONFIG
+from notso_glb.utils.gltfpack import find_gltfpack
 
 app = typer.Typer(
     name="notso-glb",
@@ -125,6 +126,14 @@ def optimize(
             rich_help_panel="[bold red][EXPERIMENTAL][/]",
         ),
     ] = DEFAULT_CONFIG["experimental_autofix"],
+    use_gltfpack: Annotated[
+        bool,
+        typer.Option(
+            "--gltfpack/--no-gltfpack",
+            help="Post-process with gltfpack for extra compression (enabled if gltfpack is installed)",
+            rich_help_panel="Compression & Textures",
+        ),
+    ] = find_gltfpack() is not None,
     quiet: Annotated[
         bool,
         typer.Option(
@@ -204,6 +213,37 @@ def optimize(
 
     if not result:
         raise typer.Exit(code=1)
+
+    # Post-process with gltfpack if enabled
+    if use_gltfpack:
+        from notso_glb.utils.gltfpack import run_gltfpack
+        from notso_glb.utils.logging import format_bytes
+
+        if not find_gltfpack():
+            console.print("[bold yellow][WARN][/] gltfpack not found in PATH, skipping")
+        else:
+            console.print("\n[bold cyan]Running gltfpack...[/]")
+            original_size = Path(result).stat().st_size
+
+            success, packed_path, msg = run_gltfpack(
+                Path(result),
+                output_path=Path(result),  # Overwrite original
+                texture_compress=True,
+                mesh_compress=True,
+            )
+
+            if success:
+                new_size = packed_path.stat().st_size
+                if original_size == 0:
+                    reduction = 0.0
+                else:
+                    reduction = ((original_size - new_size) / original_size) * 100
+                console.print(
+                    f"  [green]gltfpack:[/] {format_bytes(original_size)} -> "
+                    f"{format_bytes(new_size)} ([bold green]-{reduction:.0f}%[/])"
+                )
+            else:
+                console.print(f"  [bold red][ERROR][/] {msg}")
 
 
 def main() -> None:

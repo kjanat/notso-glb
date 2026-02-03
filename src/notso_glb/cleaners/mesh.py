@@ -1,8 +1,6 @@
 """Mesh cleanup and decimation functions."""
 
-from typing import Literal
-
-import bpy  # type: ignore[import-untyped]
+import bpy
 from bpy.types import Modifier, Object
 
 from notso_glb.utils import get_mesh_data, get_view_layer
@@ -19,7 +17,7 @@ def cleanup_mesh_bmesh(obj: Object) -> dict[str, int] | None:
 
     Returns dict with cleanup stats or None if failed.
     """
-    import bmesh  # type: ignore[import-untyped]
+    import bmesh
 
     mesh = get_mesh_data(obj)
     original_verts = len(mesh.vertices)
@@ -37,7 +35,7 @@ def cleanup_mesh_bmesh(obj: Object) -> dict[str, int] | None:
     # 1. Remove doubles (merge vertices within threshold)
     merge_dist = 0.0001  # 0.1mm threshold
     verts_before_doubles = len(bm.verts)
-    bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=merge_dist)  # ty: ignore[invalid-argument-type]
+    bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=merge_dist)
     stats["doubles_merged"] = verts_before_doubles - len(bm.verts)
 
     # 2. Dissolve degenerate geometry
@@ -93,7 +91,7 @@ def decimate_mesh(obj: Object, target_verts: int) -> tuple[int, int] | None:
     mod.use_collapse_triangulate = True  # ty:ignore[unresolved-attribute]
 
     view_layer = get_view_layer()
-    view_layer.objects.active = obj  # type: ignore[assignment]
+    view_layer.objects.active = obj
     try:
         bpy.ops.object.modifier_apply(modifier=mod.name)
         new_verts = len(mesh.vertices)
