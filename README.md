@@ -57,12 +57,14 @@ Experimental Auto-fix (`--autofix`):
 
 ## Usage
 
-See [CLI.md](CLI.md)
+See [CLI.md]
 
 ## Requirements
 
 - Blender 5.0+
 - Python 3.11 (same as bundled with Blender)
+- uv (optional, for easy install/upgrade)
+- gltfpack (optional, for extra compression)
 
 ## Useful Links
 
@@ -79,5 +81,6 @@ See [CLI.md](CLI.md)
 [Blender 5.0 Reference Manual]: https://docs.blender.org/manual/en/latest
 [Blender 5.0 glTF 2.0]: https://docs.blender.org/manual/en/5.0/addons/import_export/scene_gltf2.html
 [Blender 5.0 Python API Documentation]: https://docs.blender.org/api/current/index.html
+[CLI.md]: https://github.com/kjanat/notso-glb/blob/master/CLI.md
 
 <!-- markdownlint-disable-file MD033 -->

@@ -1,8 +1,13 @@
 {
+  "wrap_guides": [80],
   "languages": {
     "Python": {
       "language_servers": ["pylsp", "ty", "ruff", "!basedpyright", "..."],
+      "wrap_guides": [88]
     },
+    "TOML": {
+      "wrap_guides": [110]
+    }
   },
   "context_servers": {
     "blender": {

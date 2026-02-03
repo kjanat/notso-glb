@@ -24,6 +24,11 @@ dependencies    = [
   "wasmtime>=41.0.0",
 ]
 
+[project.urls]
+Homepage   = "https://github.com/kjanat/notso-glb"
+Issues     = "https://github.com/kjanat/notso-glb/issues"
+Repository = "https://github.com/kjanat/notso-glb.git"
+
 [project.scripts]
 notso-glb = "notso_glb:main"
 

@@ -1,12 +1,12 @@
-# yml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
 ---
 name: Sync Labels
+
 on:
-  push:
-    branches: [master]
-  pull_request:
-    paths: [".github/labels.yml"]
+  push: { branches: [master] }
+  pull_request: { paths: [".github/labels.yml"] }
   workflow_dispatch:
+
 jobs:
   sync:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
