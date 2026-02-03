@@ -39,8 +39,8 @@ def run_gltfpack(
         return False, input_path, "gltfpack not found in PATH"
 
     input_path = Path(input_path)
-    if not input_path.exists():
-        return False, input_path, f"Input file not found: {input_path}"
+    if not input_path.is_file():
+        return False, input_path, f"Input file not found or is not a file: {input_path}"
 
     # Default output: input_packed.glb
     if output_path is None:
