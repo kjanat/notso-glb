@@ -77,7 +77,8 @@ def run_gltfpack_wasm(
 
     args: list[str] = []
     if texture_compress:
-        args.append("-tc")
+        # WASM build lacks BasisU support, skip -tc with warning
+        print("[WARN] WASM gltfpack lacks BasisU support, skipping texture compression")
     if mesh_compress:
         args.append("-cc")
     if simplify_ratio is not None:
@@ -89,13 +90,8 @@ def run_gltfpack_wasm(
             )
         args.extend(["-si", str(simplify_ratio)])
     if texture_quality is not None:
-        if not (1 <= texture_quality <= 10):
-            return (
-                False,
-                input_path,
-                f"texture_quality must be [1, 10]: {texture_quality}",
-            )
-        args.extend(["-tq", str(texture_quality)])
+        # texture_quality only applies with -tc, which WASM doesn't support
+        pass
 
     try:
         gltfpack = get_gltfpack()
