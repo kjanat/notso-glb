@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .runtime import GltfpackWasm, _get_wasm_path
+from .runtime import GltfpackWasm
+from .runtime import _get_wasm_path
 
 __all__ = [
     "GltfpackWasm",
@@ -20,7 +21,7 @@ def is_available() -> bool:
         import wasmtime  # noqa: F401
 
         return _get_wasm_path().exists()
-    except ImportError:
+    except (ImportError, OSError):
         return False
 
 
@@ -112,5 +113,9 @@ def run_gltfpack_wasm(
         output_path.write_bytes(output_data)
         return True, output_path, "Success"
 
-    except Exception as e:
-        return False, output_path, f"WASM error: {e}"
+    except OSError as e:
+        return False, output_path, f"File I/O error: {e}"
+    except (ValueError, TypeError) as e:
+        return False, output_path, f"Argument error: {e}"
+    except UnicodeDecodeError as e:
+        return False, output_path, f"Log decode error: {e}"

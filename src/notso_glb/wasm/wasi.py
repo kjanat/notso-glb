@@ -3,9 +3,22 @@
 from __future__ import annotations
 
 import ctypes
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
+from typing import Any
 
-from .constants import WASI_EBADF, WASI_EINVAL, WASI_EIO, WASI_ENOSYS
+from .constants import WASI_EBADF
+from .constants import WASI_EINVAL
+from .constants import WASI_EIO
+from .constants import WASI_ENOSYS
+
+
+class WasiExit(Exception):
+    """Exception raised when WASI proc_exit is called."""
+
+    def __init__(self, exit_code: int) -> None:
+        self.exit_code = exit_code
+        super().__init__(f"WASI process exited with code {exit_code}")
+
 
 if TYPE_CHECKING:
     from wasmtime import Instance, Memory, Store
@@ -89,7 +102,7 @@ class WasiFilesystem:
 
     def wasi_proc_exit(self, rval: int) -> None:
         """WASI proc_exit syscall."""
-        pass
+        raise WasiExit(rval)
 
     def wasi_fd_close(self, fd: int) -> int:
         """WASI fd_close syscall."""
@@ -103,7 +116,7 @@ class WasiFilesystem:
                 self._fs_interface[name] = bytes(data)
             del self._fds[fd]
             return 0
-        except Exception:
+        except (KeyError, TypeError, IndexError):
             if fd in self._fds:
                 del self._fds[fd]
             return WASI_EIO
@@ -216,16 +229,19 @@ class WasiFilesystem:
             return WASI_EBADF
 
         fd_info = self._fds[fd]
-        if whence == 0:
+        size = fd_info.get("size", 0)
+
+        if whence == 0:  # SEEK_SET
             new_pos = offset
-        elif whence == 1:
+        elif whence == 1:  # SEEK_CUR
             new_pos = fd_info.get("position", 0) + offset
-        elif whence == 2:
-            new_pos = fd_info.get("size", 0)
+        elif whence == 2:  # SEEK_END
+            new_pos = size + offset
         else:
             return WASI_EINVAL
 
-        if new_pos > fd_info.get("size", 0):
+        # Validate position is within valid range [0, size]
+        if new_pos < 0 or new_pos > size:
             return WASI_EINVAL
 
         fd_info["position"] = new_pos

@@ -19,7 +19,7 @@ def _wasm_available() -> bool:
         from notso_glb.wasm import is_available
 
         return is_available()
-    except ImportError:
+    except (ImportError, OSError):
         return False
 
 

@@ -228,7 +228,6 @@ def optimize(
                 "[bold yellow][WARN][/] gltfpack not found and WASM unavailable, skipping"
             )
         else:
-            # Indicate which backend will be used
             backend = "native" if native_available else "WASM"
             console.print(f"\n[bold cyan]Running gltfpack ({backend})...[/]")
             original_size = Path(result).stat().st_size

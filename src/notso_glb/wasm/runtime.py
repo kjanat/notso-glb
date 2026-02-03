@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from .wasi import WasiExit
 from .wasi import WasiFilesystem
 
 
@@ -50,7 +51,13 @@ class GltfpackWasm(WasiFilesystem):
         if self._instance is not None:
             return
 
-        from wasmtime import Engine, Func, FuncType, Linker, Module, Store, ValType
+        from wasmtime import Engine
+        from wasmtime import Func
+        from wasmtime import FuncType
+        from wasmtime import Linker
+        from wasmtime import Module
+        from wasmtime import Store
+        from wasmtime import ValType
 
         engine = Engine()
         self._store = Store(engine)
@@ -219,7 +226,11 @@ class GltfpackWasm(WasiFilesystem):
         buf = self._upload_argv(argv)
 
         pack_fn = self._get_export("pack")
-        result: int = pack_fn(self._store, len(argv), buf)
+        try:
+            result: int = pack_fn(self._store, len(argv), buf)
+        except WasiExit as e:
+            # WASI proc_exit was called; treat non-zero as failure
+            result = e.exit_code
 
         free_fn = self._get_export("free")
         free_fn(self._store, buf)

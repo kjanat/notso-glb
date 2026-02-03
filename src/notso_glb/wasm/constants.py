@@ -1,7 +1,7 @@
 """WASI error codes and constants."""
 
 # WASI error codes
-WASI_EBADF = 8
-WASI_EINVAL = 28
-WASI_EIO = 29
-WASI_ENOSYS = 52
+WASI_EBADF: int = 8
+WASI_EINVAL: int = 28
+WASI_EIO: int = 29
+WASI_ENOSYS: int = 52
