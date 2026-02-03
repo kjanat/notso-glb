@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import traceback
 from pathlib import Path
+
+# Environment variables to force a specific backend (for testing)
+ENV_FORCE_NATIVE = "NOTSO_GLB_FORCE_GLTFPACK_NATIVE"
+ENV_FORCE_WASM = "NOTSO_GLB_FORCE_GLTFPACK_WASM"
 
 
 def find_gltfpack() -> str | None:
@@ -51,7 +56,30 @@ def run_gltfpack(
     gltfpack = find_gltfpack()
     use_wasm = False
 
-    if prefer_wasm and _wasm_available():
+    # Environment variable overrides for testing
+    force_native = os.environ.get(ENV_FORCE_NATIVE, "").lower() in ("1", "true", "yes")
+    force_wasm = os.environ.get(ENV_FORCE_WASM, "").lower() in ("1", "true", "yes")
+
+    if force_native and force_wasm:
+        return False, input_path, "Cannot force both native and WASM backends"
+
+    if force_native:
+        if not gltfpack:
+            return (
+                False,
+                input_path,
+                f"{ENV_FORCE_NATIVE} set but native gltfpack not found",
+            )
+        use_wasm = False
+    elif force_wasm:
+        if not _wasm_available():
+            return (
+                False,
+                input_path,
+                f"{ENV_FORCE_WASM} set but WASM runtime unavailable",
+            )
+        use_wasm = True
+    elif prefer_wasm and _wasm_available():
         use_wasm = True
     elif not gltfpack:
         if _wasm_available():
