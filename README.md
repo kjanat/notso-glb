@@ -3,7 +3,7 @@
 > Cleans up Blender files and exports optimized GLB for web delivery.
 
 ```bash
-uvx --python 3.11 \
+uvx -p3.11 \
   --from git+https://github.com/kjanat/notso-glb \
   notso-glb [OPTIONS] FILE
 ```
@@ -17,7 +17,7 @@ uvx --python 3.11 \
 ## Install
 
 ```bash
-uv tool install git+https://github.com/kjanat/notso-glb
+uv tool install -p3.11 git+https://github.com/kjanat/notso-glb
 ```
 
 then just run `notso-glb` from the command line.
