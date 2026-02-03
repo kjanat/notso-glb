@@ -2,6 +2,7 @@
 
 import shutil
 import subprocess
+import traceback
 from pathlib import Path
 
 
@@ -61,18 +62,36 @@ def run_gltfpack(
         cmd.append("-cc")
 
     if simplify_ratio is not None:
-        simplify_ratio = float(simplify_ratio)
+        try:
+            simplify_ratio = float(simplify_ratio)
+        except (TypeError, ValueError):
+            return (
+                False,
+                input_path,
+                f"simplify_ratio must be a number, got {type(simplify_ratio).__name__}",
+            )
         if not (0.0 <= simplify_ratio <= 1.0):
-            raise ValueError(
-                f"simplify_ratio must be in [0.0, 1.0], got {simplify_ratio}"
+            return (
+                False,
+                input_path,
+                f"simplify_ratio must be in [0.0, 1.0], got {simplify_ratio}",
             )
         cmd.extend(["-si", str(simplify_ratio)])
 
     if texture_quality is not None:
-        texture_quality = int(texture_quality)
+        try:
+            texture_quality = int(texture_quality)
+        except (TypeError, ValueError):
+            return (
+                False,
+                input_path,
+                f"texture_quality must be an integer, got {type(texture_quality).__name__}",
+            )
         if not (1 <= texture_quality <= 10):
-            raise ValueError(
-                f"texture_quality must be in [1, 10], got {texture_quality}"
+            return (
+                False,
+                input_path,
+                f"texture_quality must be in [1, 10], got {texture_quality}",
             )
         cmd.extend(["-tq", str(texture_quality)])
 
@@ -97,7 +116,13 @@ def run_gltfpack(
 
     except subprocess.TimeoutExpired:
         return False, output_path, "gltfpack timed out after 5 minutes"
-    except FileNotFoundError:
-        return False, output_path, "gltfpack executable not found"
+    except subprocess.SubprocessError as e:
+        return False, output_path, f"gltfpack subprocess error: {e}"
+    except OSError as e:
+        return False, output_path, f"gltfpack OS error (cmd={cmd}): {e}"
     except Exception as e:
-        return False, output_path, f"gltfpack error: {e}"
+        return (
+            False,
+            output_path,
+            f"gltfpack unexpected error: {e}\n{traceback.format_exc()}",
+        )

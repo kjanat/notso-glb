@@ -48,7 +48,7 @@ Bloat Detection:
 - CRITICAL: Props >2000 verts, repetitive detail (many islands with high verts)
 - WARNING: Props >1000 verts, scene total >15000 verts, non-root skinned meshes
 
-Experimental Auto-fix (`--experimental-autofix`):
+Experimental Auto-fix (`--autofix`):
 
 - BMesh cleanup (remove doubles, degenerate geometry, loose verts)
 - Decimate bloated props to ~1600 verts
@@ -62,7 +62,7 @@ See [CLI.md](CLI.md)
 ## Requirements
 
 - Blender 5.0+
-- Python 3.11 (bundled with Blender)
+- Python 3.11 (same as bundled with Blender)
 
 ## Useful Links
 
