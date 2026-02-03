@@ -1,7 +1,12 @@
 {
+  "wrap_guides": [80],
   "languages": {
     "Python": {
-      "language_servers": ["!basedpyright", "!pylsp", "ty", "ruff", "..."]
+      "language_servers": ["!basedpyright", "!pylsp", "ty", "ruff", "..."],
+      "wrap_guides": [88]
+    },
+    "TOML": {
+      "wrap_guides": [110]
     }
   }
 }
