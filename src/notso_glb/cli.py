@@ -130,10 +130,10 @@ def optimize(
         bool,
         typer.Option(
             "--gltfpack/--no-gltfpack",
-            help="Post-process with gltfpack for extra compression (enabled if gltfpack is installed)",
+            help="Post-process with gltfpack for extra compression (WASM fallback if native unavailable)",
             rich_help_panel="Compression & Textures",
         ),
-    ] = find_gltfpack() is not None,
+    ] = True,
     quiet: Annotated[
         bool,
         typer.Option(
