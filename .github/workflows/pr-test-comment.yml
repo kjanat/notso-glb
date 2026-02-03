@@ -1,0 +1,165 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+# adapted from https://github.com/kjanat/procclean/raw/refs/heads/master/.github/workflows/pr-test-comment.yml
+---
+name: PR Test Comment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update PR comment
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { number: prNumber, state, merged: isMerged, merge_commit_sha, head: { sha: headSha, ref: headRef } } = context.payload.pull_request;
+            const [shortSha, isClosed] = [headSha.substring(0, 7), state === 'closed'];
+
+            const markerComment = '<!-- notso-glb-pr-test-comment -->';
+
+            // Check for existing comment first (cheaper than listing all files)
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number: prNumber }
+            );
+
+            const existingComment = comments.find(c =>
+              c.body?.includes(markerComment)
+            );
+
+            // If no existing comment, check if PR has Python file changes
+            if (!existingComment) {
+              const files = await github.paginate(
+                github.rest.pulls.listFiles,
+                { owner, repo, pull_number: prNumber }
+              );
+
+              const pythonFiles = files.filter(f =>
+                (f.filename.endsWith('.py') || f.previous_filename?.endsWith('.py')) &&
+                (f.status === 'added' || f.status === 'modified' || f.status === 'renamed')
+              );
+
+              console.log(`Found ${pythonFiles.length} changed Python files`);
+
+              if (pythonFiles.length === 0) {
+                console.log('No Python files changed, skipping comment');
+                return;
+              }
+            }
+
+            let body;
+
+            if (isClosed) {
+              // Get commit message for the final commit
+              const { data: commit } = await github.rest.git.getCommit({
+                owner,
+                repo,
+                commit_sha: headSha,
+              });
+              const commitMessage = commit.message.split('\n')[0]; // First line only
+
+              const status = isMerged ? '✅ Merged' : '❌ Closed';
+              const mergeInfo = isMerged && merge_commit_sha
+                ? `\n\n**Merge commit:** \`${merge_commit_sha}\``
+                : '';
+
+              body = `${markerComment}
+            ## 📦 Test this PR (archived)
+
+            > **Status:** ${status}
+
+            This PR has been ${isMerged ? 'merged' : 'closed'}. You can still test the final state:
+
+            \`\`\`bash
+            uvx -p3.11 --from git+https://github.com/${owner}/${repo}@${headSha} notso-glb --help
+            \`\`\`
+
+            📋 PR Details
+
+            | Field | Value |
+            |-------|-------|
+            | **Final commit** | \`${headSha}\` |
+            | **Commit message** | ${commitMessage} |
+            | **Branch** | \`${headRef}\` |${mergeInfo}
+
+            **Example usage:**
+            \`\`\`bash
+            # Show help
+            uvx -p3.11 --from git+https://github.com/${owner}/${repo}@${headSha} notso-glb --help
+
+            # Optimize a GLB file
+            uvx -p3.11 --from git+https://github.com/${owner}/${repo}@${headSha} notso-glb optimize input.glb
+
+            # Optimize with Draco compression disabled
+            uvx -p3.11 --from git+https://github.com/${owner}/${repo}@${headSha} notso-glb optimize input.glb --no-draco
+
+            # Optimize a Blender file to glTF
+            uvx -p3.11 --from git+https://github.com/${owner}/${repo}@${headSha} notso-glb optimize model.blend -f gltf
+            \`\`\`
+
+            ---
+            🤖 Archived on ${isMerged ? 'merge' : 'close'}`;
+            } else {
+              // Active PR - show branch-based commands
+              body = `${markerComment}
+            ## 🧪 Test this PR
+
+            You can test this PR directly using \`uvx\`:
+
+            **From branch:**
+            \`\`\`bash
+            uvx -p3.11 --from git+https://github.com/${owner}/${repo}@${headRef} notso-glb --help
+            \`\`\`
+
+            **From specific commit (\`${shortSha}\`):**
+            \`\`\`bash
+            uvx -p3.11 --from git+https://github.com/${owner}/${repo}@${headSha} notso-glb --help
+            \`\`\`
+
+            📋 Example usage
+
+            \`\`\`bash
+            # Show help
+            uvx -p3.11 --from git+https://github.com/${owner}/${repo}@${headRef} notso-glb --help
+
+            # Optimize a GLB file
+            uvx -p3.11 --from git+https://github.com/${owner}/${repo}@${headRef} notso-glb optimize input.glb
+
+            # Optimize with custom output path
+            uvx -p3.11 --from git+https://github.com/${owner}/${repo}@${headRef} notso-glb optimize input.glb -o output.glb
+
+            # Optimize with WebP textures and max texture size
+            uvx -p3.11 --from git+https://github.com/${owner}/${repo}@${headRef} notso-glb optimize model.blend --webp --max-texture-size 1024
+            \`\`\`
+
+            ---
+            🤖 Auto-updated on push • Commit: ${shortSha}`;
+            }
+
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingComment.id,
+                body,
+              });
+              console.log(`Updated comment ${existingComment.id}`);
+            } else {
+              // Create new comment
+              const { data: newComment } = await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body,
+              });
+              console.log(`Created comment ${newComment.id}`);
+            }
