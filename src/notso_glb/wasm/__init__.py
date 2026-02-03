@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import ctypes
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from wasmtime import Instance, Store
+    from wasmtime import Instance, Memory, Store
 
 # WASI error codes
 WASI_EBADF = 8
@@ -59,11 +59,20 @@ class GltfpackWasm:
             fd += 1
         return fd
 
+    def _get_memory(self) -> Memory:
+        """Get WASM memory export."""
+        from wasmtime import Memory
+
+        exports: Any = self._instance.exports(self._store)  # type: ignore[union-attr]
+        memory = exports["memory"]
+        assert isinstance(memory, Memory)
+        return memory
+
     def _refresh_memory(self) -> None:
         """Refresh memory array reference (needed after memory growth)."""
-        memory = self._instance.exports(self._store)["memory"]  # type: ignore
-        ptr = memory.data_ptr(self._store)
-        size = memory.data_len(self._store)
+        memory = self._get_memory()
+        ptr = memory.data_ptr(self._store)  # type: ignore[arg-type]
+        size = memory.data_len(self._store)  # type: ignore[arg-type]
         self._memory_array = (ctypes.c_ubyte * size).from_address(
             ctypes.addressof(ptr.contents)
         )
@@ -71,16 +80,19 @@ class GltfpackWasm:
     def _get_string(self, offset: int, length: int) -> str:
         """Read string from WASM memory."""
         self._refresh_memory()
+        assert self._memory_array is not None
         return bytes(self._memory_array[offset : offset + length]).decode("utf-8")
 
     def _set_u8(self, offset: int, value: int) -> None:
         """Write uint8 to WASM memory."""
         self._refresh_memory()
+        assert self._memory_array is not None
         self._memory_array[offset] = value & 0xFF
 
     def _set_u32(self, offset: int, value: int) -> None:
         """Write uint32 (little-endian) to WASM memory."""
         self._refresh_memory()
+        assert self._memory_array is not None
         val_bytes = value.to_bytes(4, "little")
         for i, b in enumerate(val_bytes):
             self._memory_array[offset + i] = b
@@ -88,7 +100,13 @@ class GltfpackWasm:
     def _get_u32(self, offset: int) -> int:
         """Read uint32 (little-endian) from WASM memory."""
         self._refresh_memory()
+        assert self._memory_array is not None
         return int.from_bytes(bytes(self._memory_array[offset : offset + 4]), "little")
+
+    def _get_export(self, name: str) -> Any:
+        """Get a named export from the WASM instance."""
+        exports: Any = self._instance.exports(self._store)  # type: ignore[union-attr]
+        return exports[name]
 
     def _upload_argv(self, argv: list[str]) -> int:
         """Upload argument vector to WASM memory."""
@@ -97,11 +115,12 @@ class GltfpackWasm:
         for arg in encoded_args:
             buf_size += len(arg) + 1
 
-        malloc = self._instance.exports(self._store)["malloc"]  # type: ignore
-        buf = malloc(self._store, buf_size)
+        malloc = self._get_export("malloc")
+        buf: int = malloc(self._store, buf_size)
         argp = buf + len(argv) * 4
 
         self._refresh_memory()
+        assert self._memory_array is not None
 
         for i, arg in enumerate(encoded_args):
             self._set_u32(buf + i * 4, argp)
@@ -215,6 +234,7 @@ class GltfpackWasm:
             return WASI_EINVAL
 
         self._refresh_memory()
+        assert self._memory_array is not None
         for i, b in enumerate(mount):
             self._memory_array[path + i] = b
         return 0
@@ -265,6 +285,7 @@ class GltfpackWasm:
 
             read_len = min(size - pos, buf_len)
             self._refresh_memory()
+            assert self._memory_array is not None
             for j in range(read_len):
                 self._memory_array[buf + j] = data[pos + j]
 
@@ -286,6 +307,7 @@ class GltfpackWasm:
             buf_len = self._get_u32(iovs + 8 * i + 4)
 
             self._refresh_memory()
+            assert self._memory_array is not None
             write_data = bytes(self._memory_array[buf : buf + buf_len])
 
             if fd_info.get("type") == "output":
@@ -448,7 +470,8 @@ class GltfpackWasm:
         self._instance = linker.instantiate(self._store, module)
 
         # Call constructors
-        ctors = self._instance.exports(self._store).get("__wasm_call_ctors")
+        exports: Any = self._instance.exports(self._store)
+        ctors = exports.get("__wasm_call_ctors")
         if ctors:
             ctors(self._store)
 
@@ -482,10 +505,10 @@ class GltfpackWasm:
 
         buf = self._upload_argv(argv)
 
-        pack_fn = self._instance.exports(self._store)["pack"]  # type: ignore
-        result = pack_fn(self._store, len(argv), buf)
+        pack_fn = self._get_export("pack")
+        result: int = pack_fn(self._store, len(argv), buf)
 
-        free_fn = self._instance.exports(self._store)["free"]  # type: ignore
+        free_fn = self._get_export("free")
         free_fn(self._store, buf)
 
         log = self._output_buffer.decode("utf-8", errors="replace")
