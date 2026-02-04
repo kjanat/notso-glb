@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-action.json
+---
+name: Install dprint
+description: Ensure dprint is installed
+
+outputs:
+  version: { description: Installed dprint version, value: "${{ steps.download.outputs.version }}" }
+  location: { description: Path to the installed dprint binary, value: "${{ steps.download.outputs.location }}" }
+
+runs:
+  using: composite
+  steps:
+    - name: Ensure dprint is installed
+      id: dprint
+      shell: bash
+      env: { ACTION_PATH: "${{ github.action_path }}" }
+      run: "${ACTION_PATH}/install.sh"
