@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-GITHUB_OUTPUT="${GITHUB_OUTPUT:-/dev/stdout}"
+GITHUB_OUTPUT="${GITHUB_OUTPUT:-/dev/null}"
 
 # Resolve paths relative to action location
 ACTION_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,4 +32,7 @@ echo "before=${BEFORE}" >>"${GITHUB_OUTPUT}"
 echo "after=${AFTER}" >>"${GITHUB_OUTPUT}"
 
 # Log
+if [[ "${BEFORE}" == "${AFTER}" ]]; then
+	exit 0 # The python script already logs this
+fi
 echo "WASM version: ${BEFORE} -> ${AFTER}"

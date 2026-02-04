@@ -16,37 +16,37 @@ default:
 # Run all tests
 [group('dev')]
 test *args:
-    uv run pytest {{ args }}
+    @uv run pytest {{ args }}
 
 # Run tests with coverage
 [group('dev')]
 test-cov *args:
-    uv run pytest --cov --cov-report=term-missing {{ args }}
+    @uv run pytest --cov --cov-report=term-missing {{ args }}
 
 # Run linting
 [group('dev')]
 lint *args:
-    uv run ruff check {{ args }}
+    @uv run ruff check {{ args }}
 
 # Run linting with auto-fix
 [group('dev')]
 lint-fix *args:
-    uv run ruff check --fix {{ args }}
+    @uv run ruff check --fix-only {{ args }}
 
 # Run formatting
 [group('dev')]
 fmt *args:
-    dprint fmt {{ args }}
+    @dprint fmt {{ args }}
 
 # Check formatting
 [group('dev')]
 fmt-check *args:
-    dprint check {{ args }}
+    @dprint check {{ args }}
 
 # Run type checking
 [group('dev')]
 typecheck *args:
-    uv run ty check {{ args }}
+    @uv run ty check {{ args }}
 
 # Run all checks (lint, format check, typecheck, test)
 [group('dev')]
@@ -98,17 +98,17 @@ docker-sizes:
 # Run CLI directly (requires uv sync first)
 [group('cli')]
 notso-glb *args:
-    uv run notso-glb {{ args }}
+    uv run -q notso-glb {{ args }}
 
 # Show CLI help
 [group('cli')]
 help *command:
-    uv run notso-glb {{ command }} --help
+    @uv run -q notso-glb {{ command }} --help
 
 # Show CLI version
 [group('cli')]
 version:
-    uv version
+    @uv run -q notso-glb --version
 
 # ==============================================================================
 # Maintenance
@@ -123,7 +123,7 @@ sync:
 [group('maintenance')]
 update:
     uv lock --upgrade
-    uv sync
+    just sync
 
 # Clean build artifacts
 [group('maintenance')]
@@ -135,4 +135,4 @@ clean:
 [group('maintenance')]
 [working-directory('./.github/actions/download-wasm')]
 wasm-download:
-    ./download.sh
+    @./download.sh
