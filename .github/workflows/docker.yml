@@ -1,0 +1,119 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+---
+name: Docker Build & Test
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/docker.yml"
+  pull_request:
+    branches: [master]
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/docker.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE_NAME: notso-glb
+  TEST_TAG: notso-glb:test
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ${{ env.TEST_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test CLI help
+        run: docker run --rm ${{ env.TEST_TAG }} --help
+
+      - name: Test version output
+        run: docker run --rm ${{ env.TEST_TAG }} --version
+
+      - name: Test module import
+        run: |
+          docker run --rm --entrypoint python ${{ env.TEST_TAG }} -c "
+          import notso_glb
+          print(f'notso-glb version: {notso_glb.__version__}')
+          from notso_glb.wasm.runner import run_gltfpack_wasm
+          print('WASM runner imported successfully')
+          "
+
+      - name: Test gltfpack binary
+        run: |
+          docker run --rm --entrypoint gltfpack ${{ env.TEST_TAG }} -h | head -5
+
+      - name: Download test model
+        run: |
+          mkdir -p test-models
+          curl -fsSL -o test-models/BoxAnimated.glb \
+            "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/BoxAnimated/glTF-Binary/BoxAnimated.glb"
+
+      - name: Test GLB processing
+        run: |
+          docker run --rm \
+            --user $(id -u):$(id -g) \
+            -v ${{ github.workspace }}/test-models:/data \
+            ${{ env.TEST_TAG }} \
+            /data/BoxAnimated.glb -o /data/BoxAnimated-optimized.glb --no-gltfpack
+
+      - name: Verify output file
+        run: |
+          ls -la test-models/
+          test -f test-models/BoxAnimated-optimized.glb
+          echo "Output file size: $(stat -c%s test-models/BoxAnimated-optimized.glb) bytes"
+
+      - name: Test with native gltfpack
+        run: |
+          docker run --rm \
+            --user $(id -u):$(id -g) \
+            -v ${{ github.workspace }}/test-models:/data \
+            ${{ env.TEST_TAG }} \
+            /data/BoxAnimated.glb -o /data/BoxAnimated-gltfpack.glb --gltfpack --no-draco
+
+      - name: Compare output sizes
+        run: |
+          ORIGINAL=$(stat -c%s test-models/BoxAnimated.glb)
+          OPTIMIZED=$(stat -c%s test-models/BoxAnimated-optimized.glb)
+          GLTFPACK=$(stat -c%s test-models/BoxAnimated-gltfpack.glb)
+          echo "| File | Size (bytes) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| ---- | ------------ |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Original | ${ORIGINAL} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Optimized (no gltfpack) | ${OPTIMIZED} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Optimized (with gltfpack) | ${GLTFPACK} |" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report image size
+        run: |
+          SIZE=$(docker image inspect ${{ env.TEST_TAG }} --format='{{.Size}}')
+          SIZE_MB=$((SIZE / 1024 / 1024))
+          echo "### Docker Image Stats" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Image size**: ${SIZE_MB} MB" >> "$GITHUB_STEP_SUMMARY"

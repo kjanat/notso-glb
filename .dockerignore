@@ -1,0 +1,68 @@
+# Git
+.git
+.gitignore
+.github
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+*.egg
+.eggs
+dist
+build
+*.whl
+
+# Virtual environments
+.venv
+venv
+ENV
+env
+
+# IDE and editors
+.idea
+.vscode
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing and coverage
+.pytest_cache
+.coverage
+htmlcov
+.tox
+.nox
+
+# Documentation
+*.md
+!README.md
+docs
+
+# Development files
+.editorconfig
+.pre-commit-config.yaml
+tombi.toml
+.ruff_cache
+
+# Test files (not needed in production)
+tests
+
+# Local development
+*.local
+.env
+.env.*
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.temp
+*.log
+
+# The WASM file will be downloaded during build
+src/notso_glb/wasm/gltfpack.wasm
+src/notso_glb/wasm/gltfpack.version
