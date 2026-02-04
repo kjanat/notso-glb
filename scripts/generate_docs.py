@@ -2,6 +2,7 @@
 """Generate CLI documentation from Typer app and clean up the output."""
 
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -105,9 +106,13 @@ def main() -> None:
     output_path.write_text(clean_content)
     print(f"Docs saved to: {output_path}")
 
-    # Format with dprint
-    print("Formatting with dprint...")
-    subprocess.run(["dprint", "fmt", str(output_path)], check=True)
+    # Format with dprint if available
+    dprint = shutil.which("dprint")
+    if dprint:
+        print("Formatting with dprint...")
+        subprocess.run([dprint, "fmt", str(output_path)], check=True)
+    else:
+        print("dprint not found, skipping formatting")
 
 
 if __name__ == "__main__":
