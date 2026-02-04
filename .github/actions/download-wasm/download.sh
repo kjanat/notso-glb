@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+GITHUB_OUTPUT="${GITHUB_OUTPUT:-/dev/stdout}"
+
 # Resolve paths relative to action location
 ACTION_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${ACTION_DIR}/../../.." && pwd)"
@@ -26,7 +28,6 @@ fi
 AFTER=$(cat "${VERSION_FILE}")
 
 # Output to GitHub
-# shellcheck disable=SC2154  # GITHUB_OUTPUT is set by GitHub Actions
 echo "before=${BEFORE}" >>"${GITHUB_OUTPUT}"
 echo "after=${AFTER}" >>"${GITHUB_OUTPUT}"
 

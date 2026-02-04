@@ -20,34 +20,37 @@ test *args:
 
 # Run tests with coverage
 [group('dev')]
-test-cov:
-    uv run pytest --cov --cov-report=term-missing
+test-cov *args:
+    uv run pytest --cov --cov-report=term-missing {{ args }}
 
 # Run linting
 [group('dev')]
-lint:
-    uv run ruff check .
+lint *args:
+    uv run ruff check {{ args }}
 
 # Run linting with auto-fix
 [group('dev')]
-lint-fix:
-    uv run ruff check --fix .
+lint-fix *args:
+    uv run ruff check --fix {{ args }}
 
 # Run formatting
 [group('dev')]
-fmt:
-    uv run ruff format .
-    dprint fmt
+fmt *args:
+    dprint fmt {{ args }}
+
+# Check formatting
+[group('dev')]
+fmt-check *args:
+    dprint check {{ args }}
 
 # Run type checking
 [group('dev')]
-typecheck:
-    uv run ty check
+typecheck *args:
+    uv run ty check {{ args }}
 
 # Run all checks (lint, format check, typecheck, test)
 [group('dev')]
-check: lint typecheck test
-    uv run ruff format --check .
+check: lint typecheck test fmt-check
 
 # ==============================================================================
 # Docker
@@ -55,13 +58,13 @@ check: lint typecheck test
 
 # Build production Docker image
 [group('docker')]
-docker-build:
-    docker build -t notso-glb:latest .
+docker-build *args:
+    docker build -t notso-glb:latest {{ args }} .
 
 # Build development Docker image
 [group('docker')]
-docker-build-dev:
-    docker build -f Dockerfile.dev -t notso-glb:dev .
+docker-build-dev *args:
+    docker build -f Dockerfile.dev -t notso-glb:dev {{ args }} .
 
 # Test dev image with a GLB file
 [group('docker')]
@@ -99,13 +102,13 @@ notso-glb *args:
 
 # Show CLI help
 [group('cli')]
-help:
-    uv run notso-glb --help
+help *command:
+    uv run notso-glb {{ command }} --help
 
 # Show CLI version
 [group('cli')]
 version:
-    uv run notso-glb --version
+    uv version
 
 # ==============================================================================
 # Maintenance
@@ -130,5 +133,6 @@ clean:
 
 # Download latest WASM from npm
 [group('maintenance')]
-download-wasm:
-    ./.github/actions/download-wasm/download.sh
+[working-directory('./.github/actions/download-wasm')]
+wasm-download:
+    ./download.sh
