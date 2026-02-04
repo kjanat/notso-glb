@@ -66,6 +66,3 @@ temp
 # The WASM file will be downloaded during build
 src/notso_glb/wasm/gltfpack.wasm
 src/notso_glb/wasm/gltfpack.version
-
-# License file (embedded in image labels)
-LICENSE
