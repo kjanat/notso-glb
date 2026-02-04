@@ -19,6 +19,9 @@ def add_action_module_path() -> Generator[None, None, None]:
     sys.path.insert(0, action_path)
     yield
     sys.path.remove(action_path)
+    # Clear cached test module so patches apply fresh on next import
+    if "test" in sys.modules:
+        del sys.modules["test"]
 
 
 class TestGetBundledVersion:
@@ -178,30 +181,12 @@ class TestMain:
         assert "1.0.0" in captured.out
         assert "gltfpack.wasm" in captured.out
 
-    @patch("test.is_available")
-    @patch("test.get_wasm_path")
-    @patch("test.get_bundled_version")
-    @patch("test.run_gltfpack_wasm")
-    def test_processes_glb_files(
-        self,
-        mock_run_wasm: MagicMock,
-        mock_version: MagicMock,
-        mock_wasm_path: MagicMock,
-        mock_is_avail: MagicMock,
-        tmp_path: Path,
-    ) -> None:
+    def test_processes_glb_files(self, tmp_path: Path) -> None:
         """Should process .glb files."""
-        try:
-            from test import main  # type: ignore[import-not-found]
-        except ImportError:
-            pytest.skip("Test script not importable")
-            return
+        import importlib
 
-        mock_is_avail.return_value = True
-        mock_version.return_value = "1.0.0"
         wasm_file = tmp_path / "gltfpack.wasm"
         wasm_file.write_bytes(b"\x00asm")
-        mock_wasm_path.return_value = wasm_file
 
         # Create test model
         model_dir = tmp_path / "models"
@@ -209,36 +194,58 @@ class TestMain:
         model_file = model_dir / "test.glb"
         model_file.write_bytes(b"fake glb data")
 
-        mock_run_wasm.return_value = (True, tmp_path / "out.glb", "Success")
+        # Mock function that creates output file at the given path
+        def mock_run_wasm_impl(
+            _input_path: Path,
+            output_path: Path,
+            **_kwargs: object,
+        ) -> tuple[bool, Path, str]:
+            output_path.write_bytes(b"packed")
+            return (True, output_path, "Success")
 
-        with patch("test.MODEL_DIR", model_dir):
-            with patch("test.MAX_MODELS", 10):
-                result = main()
+        # Clear cached test module to ensure fresh import with patches
+        if "test" in sys.modules:
+            del sys.modules["test"]
 
-        assert result == 0
-        mock_run_wasm.assert_called()
+        # Patch at source before importing test module
+        with (
+            patch("notso_glb.wasm.is_available", return_value=True),
+            patch("notso_glb.wasm.get_wasm_path", return_value=wasm_file),
+            patch(
+                "notso_glb.wasm.run_gltfpack_wasm",
+                side_effect=mock_run_wasm_impl,
+            ) as mock_run_wasm,
+        ):
+            try:
+                import test as test_module  # type: ignore[import-not-found]
+
+                importlib.reload(test_module)
+            except ImportError:
+                pytest.skip("Test script not importable")
+                return
+
+            with patch.object(test_module, "MODEL_DIR", model_dir):
+                with patch.object(test_module, "MAX_MODELS", 10):
+                    with patch.object(
+                        test_module, "get_bundled_version", return_value="1.0.0"
+                    ):
+                        result = test_module.main()
+
+            assert result == 0
+            mock_run_wasm.assert_called()
 
     @patch("test.is_available")
     @patch("test.get_wasm_path")
-    @patch("test.get_bundled_version")
     @patch("test.run_gltfpack_wasm")
     def test_processes_gltf_files(
         self,
         mock_run_wasm: MagicMock,
-        mock_version: MagicMock,
         mock_wasm_path: MagicMock,
         mock_is_avail: MagicMock,
         tmp_path: Path,
     ) -> None:
         """Should process .gltf files."""
-        try:
-            from test import main  # type: ignore[import-not-found]
-        except ImportError:
-            pytest.skip("Test script not importable")
-            return
-
         mock_is_avail.return_value = True
-        mock_version.return_value = "1.0.0"
         wasm_file = tmp_path / "gltfpack.wasm"
         wasm_file.write_bytes(b"\x00asm")
         mock_wasm_path.return_value = wasm_file
@@ -249,11 +256,27 @@ class TestMain:
         model_file = model_dir / "test.gltf"
         model_file.write_bytes(b"fake gltf data")
 
-        mock_run_wasm.return_value = (True, tmp_path / "out.gltf", "Success")
+        # Mock function that creates output file at the given path
+        def mock_run_wasm_impl(
+            _input_path: Path,
+            output_path: Path,
+            **_kwargs: object,
+        ) -> tuple[bool, Path, str]:
+            output_path.write_bytes(b"packed")
+            return (True, output_path, "Success")
+
+        mock_run_wasm.side_effect = mock_run_wasm_impl
+
+        try:
+            from test import main  # type: ignore[import-not-found]
+        except ImportError:
+            pytest.skip("Test script not importable")
+            return
 
         with patch("test.MODEL_DIR", model_dir):
             with patch("test.MAX_MODELS", 10):
-                result = main()
+                with patch("test.get_bundled_version", return_value="1.0.0"):
+                    result = main()
 
         assert result == 0
 

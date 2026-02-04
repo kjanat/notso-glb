@@ -17,7 +17,7 @@ def _active_object() -> Object:
 class TestAnalyzeMeshBloat:
     """Tests for analyze_mesh_bloat function."""
 
-    def test_low_poly_mesh_no_warning(self, _cube_mesh: Object) -> None:
+    def test_low_poly_mesh_no_warning(self, cube_mesh: Object) -> None:
         """Low poly mesh should not trigger warnings."""
         from notso_glb.analyzers import analyze_mesh_bloat
 
@@ -25,7 +25,7 @@ class TestAnalyzeMeshBloat:
         prop_warnings = [w for w in warnings if "PROP" in cast(str, w.get("issue", ""))]
         assert len(prop_warnings) == 0
 
-    def test_high_vert_prop_warning(self, _high_poly_mesh: Object) -> None:
+    def test_high_vert_prop_warning(self, high_poly_mesh: Object) -> None:
         """High-poly non-skinned mesh should trigger warnings."""
         from notso_glb.analyzers import analyze_mesh_bloat
 

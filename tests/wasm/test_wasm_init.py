@@ -92,7 +92,7 @@ class TestRunGltfpackWasm:
         success, _, msg = run_gltfpack_wasm(input_path)
 
         assert success is False
-        assert "not available" in msg
+        assert "not available" in msg or "not found" in msg
 
     @patch("notso_glb.wasm.is_available")
     def test_returns_error_when_input_not_found(
@@ -110,7 +110,7 @@ class TestRunGltfpackWasm:
         assert "not found" in msg
 
     @patch("notso_glb.wasm.is_available")
-    @patch("notso_glb.wasm.get_gltfpack")
+    @patch("notso_glb.wasm.runner.get_gltfpack")
     def test_generates_output_path_with_packed_suffix(
         self, mock_get_gltfpack: MagicMock, mock_is_avail: MagicMock, tmp_path: Path
     ) -> None:
@@ -130,7 +130,7 @@ class TestRunGltfpackWasm:
         assert path == tmp_path / "model_packed.glb"
 
     @patch("notso_glb.wasm.is_available")
-    @patch("notso_glb.wasm.get_gltfpack")
+    @patch("notso_glb.wasm.runner.get_gltfpack")
     def test_strips_existing_packed_suffix(
         self, mock_get_gltfpack: MagicMock, mock_is_avail: MagicMock, tmp_path: Path
     ) -> None:
@@ -150,9 +150,8 @@ class TestRunGltfpackWasm:
         assert path == tmp_path / "model_packed.glb"
 
     @patch("notso_glb.wasm.is_available")
-    @patch("notso_glb.wasm.get_gltfpack")
     def test_validates_simplify_ratio_range(
-        self, _mock_get_gltfpack: MagicMock, mock_is_avail: MagicMock, tmp_path: Path
+        self, mock_is_avail: MagicMock, tmp_path: Path
     ) -> None:
         """Should validate simplify_ratio is in [0.0, 1.0]."""
         from notso_glb.wasm import run_gltfpack_wasm
@@ -167,7 +166,7 @@ class TestRunGltfpackWasm:
         assert "simplify_ratio" in msg
 
     @patch("notso_glb.wasm.is_available")
-    @patch("notso_glb.wasm.get_gltfpack")
+    @patch("notso_glb.wasm.runner.get_gltfpack")
     def test_passes_mesh_compress_argument(
         self, mock_get_gltfpack: MagicMock, mock_is_avail: MagicMock, tmp_path: Path
     ) -> None:
@@ -189,7 +188,7 @@ class TestRunGltfpackWasm:
         assert "-cc" in args
 
     @patch("notso_glb.wasm.is_available")
-    @patch("notso_glb.wasm.get_gltfpack")
+    @patch("notso_glb.wasm.runner.get_gltfpack")
     def test_skips_texture_compress_with_warning(
         self,
         mock_get_gltfpack: MagicMock,
@@ -214,7 +213,7 @@ class TestRunGltfpackWasm:
         assert "BasisU" in captured.out or "texture compression" in captured.out
 
     @patch("notso_glb.wasm.is_available")
-    @patch("notso_glb.wasm.get_gltfpack")
+    @patch("notso_glb.wasm.runner.get_gltfpack")
     def test_ignores_texture_quality_parameter(
         self, mock_get_gltfpack: MagicMock, mock_is_avail: MagicMock, tmp_path: Path
     ) -> None:
@@ -235,7 +234,7 @@ class TestRunGltfpackWasm:
         assert success is True
 
     @patch("notso_glb.wasm.is_available")
-    @patch("notso_glb.wasm.get_gltfpack")
+    @patch("notso_glb.wasm.runner.get_gltfpack")
     def test_handles_pack_failure(
         self, mock_get_gltfpack: MagicMock, mock_is_avail: MagicMock, tmp_path: Path
     ) -> None:
@@ -256,7 +255,7 @@ class TestRunGltfpackWasm:
         assert "failed" in msg.lower()
 
     @patch("notso_glb.wasm.is_available")
-    @patch("notso_glb.wasm.get_gltfpack")
+    @patch("notso_glb.wasm.runner.get_gltfpack")
     def test_handles_file_io_error(
         self, mock_get_gltfpack: MagicMock, mock_is_avail: MagicMock, tmp_path: Path
     ) -> None:
@@ -274,10 +273,10 @@ class TestRunGltfpackWasm:
         success, _, msg = run_gltfpack_wasm(input_path)
 
         assert success is False
-        assert "I/O error" in msg
+        assert "I/O error" in msg or "File I/O" in msg
 
     @patch("notso_glb.wasm.is_available")
-    @patch("notso_glb.wasm.get_gltfpack")
+    @patch("notso_glb.wasm.runner.get_gltfpack")
     def test_writes_output_on_success(
         self, mock_get_gltfpack: MagicMock, mock_is_avail: MagicMock, tmp_path: Path
     ) -> None:

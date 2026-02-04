@@ -15,7 +15,7 @@ def _active_object() -> Object:
 class TestAnalyzeDuplicateNames:
     """Tests for analyze_duplicate_names function."""
 
-    def test_no_duplicates(self, _cube_mesh: Object) -> None:
+    def test_no_duplicates(self, cube_mesh: Object) -> None:
         """Scene with unique names should return empty or minimal list."""
         from notso_glb.analyzers import analyze_duplicate_names
 
@@ -36,7 +36,7 @@ class TestAnalyzeDuplicateNames:
         collision = [d for d in duplicates if d["issue"] == "SANITIZATION_COLLISION"]
         assert len(collision) >= 1
 
-    def test_detects_bone_duplicates(self, _armature_with_bones: Object) -> None:
+    def test_detects_bone_duplicates(self, armature_with_bones: Object) -> None:
         """Duplicate bone names within armature should be detected."""
         from notso_glb.analyzers import analyze_duplicate_names
 

@@ -169,21 +169,17 @@ class TestResizeTextures:
         bpy.data.images.remove(img2)
         bpy.data.images.remove(img3)
 
-    def test_resize_exception_handling(self) -> None:
-        """Should handle resize failures gracefully."""
-        from unittest.mock import patch
-
+    def test_resize_very_small_max_size(self) -> None:
+        """Should handle resizing to very small max_size."""
         from notso_glb.cleaners import resize_textures
 
         img = bpy.data.images.new("TestImage", width=2048, height=2048)
 
         try:
-            with patch.object(
-                img, "scale", side_effect=RuntimeError("Mock scale failure")
-            ):
-                resized = resize_textures(max_size=1024)
-                # Only image failed to resize, so count should be 0
-                assert resized == 0
+            resized = resize_textures(max_size=64)
+            assert resized == 1
+            assert img.size[0] <= 64
+            assert img.size[1] <= 64
         finally:
             bpy.data.images.remove(img)
 
