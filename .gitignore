@@ -8,8 +8,19 @@ wheels/
 
 # Virtual environments
 .venv
-**/.*_cachce
+**/.*_cache
 .coverage
 *.gltf
 *.glb
 *.bin
+.cache
+
+# WASM binary (downloaded from npm during CI/publish)
+src/notso_glb/wasm/gltfpack.wasm
+
+# Markdown files not to be included
+/_*.md
+/claudedocs
+
+# Shell scripts not to be included
+test_convert.sh

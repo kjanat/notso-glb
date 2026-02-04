@@ -8,9 +8,20 @@ from __future__ import annotations
 
 from typing import cast
 
-import bpy
 import pytest
-from bpy.types import Image, Mesh, Object
+
+# Conditionally import bpy - only needed for tests that use Blender
+try:
+    import bpy
+    from bpy.types import Image, Mesh, Object
+
+    HAS_BPY = True
+except ImportError:
+    HAS_BPY = False
+    bpy = None  # type: ignore
+    Image = None  # type: ignore
+    Mesh = None  # type: ignore
+    Object = None  # type: ignore
 
 
 def _active_object() -> Object:
@@ -29,6 +40,8 @@ def _get_mesh_data(obj: Object) -> Mesh:
 @pytest.fixture(autouse=True)
 def reset_blender_scene() -> None:
     """Reset Blender to factory settings before each test."""
+    if not HAS_BPY:
+        pytest.skip("Blender (bpy) not available")
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
 

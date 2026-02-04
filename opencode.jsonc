@@ -9,6 +9,16 @@
         "UV_PROJECT": "~/projects/blender-mcp",
       },
     },
+    "blender-git": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--from",
+        "git+https://github.com/kjanat/blender-mcp",
+        "blender-mcp",
+      ],
+      "enabled": true,
+    },
   },
   "lsp": {
     "ruff": {
@@ -19,6 +29,29 @@
       "command": [".venv/bin/ty", "server"],
       "extensions": [".py", ".pyi", ".ipynb"],
     },
-    "pyright": { "disabled": true },
+  },
+  "formatter": {
+    "dprint": {
+      "command": ["dprint", "fmt", "$FILE"],
+      "extensions": [
+        ".css",
+        ".html",
+        ".ipynb",
+        ".json",
+        ".jsonc",
+        ".less",
+        ".md",
+        ".py",
+        ".pyi",
+        ".sass",
+        ".scss",
+        ".toml",
+        ".ts",
+        ".tsx",
+        ".yaml",
+        ".yml",
+        "Dockerfile",
+      ],
+    },
   },
 }

@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+---
+name: Test WASM gltfpack
+
+on:
+  push: { branches: [master] }
+  pull_request: { branches: [master] }
+  schedule: [{ cron: "0 0 * * 0" }] # Weekly check for new gltfpack versions
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env: { UV_PYTHON: "3.11" }
+
+jobs:
+  test-wasm:
+    runs-on: ubuntu-latest
+    permissions: { contents: read }
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Checkout three.js test models
+        uses: actions/checkout@v6
+        with:
+          repository: mrdoob/three.js
+          path: test-models/three.js
+          sparse-checkout: examples/models/gltf
+          sparse-checkout-cone-mode: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with: { activate-environment: true }
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Download latest WASM from npm
+        id: wasm
+        uses: ./.github/actions/download-wasm
+
+      - name: Test WASM gltfpack on three.js models
+        id: test
+        uses: ./.github/actions/test-wasm-models
+
+      - name: Report results
+        if: always()
+        env:
+          VERSION_BEFORE: ${{ steps.wasm.outputs.before }}
+          VERSION_AFTER: ${{ steps.wasm.outputs.after }}
+          PASSED: ${{ steps.test.outputs.passed }}
+          UNEXPECTED: ${{ steps.test.outputs.unexpected-failed }}
+          EXT_RESOURCES: ${{ steps.test.outputs.expected-external-resources }}
+          DRACO_INPUT: ${{ steps.test.outputs.expected-draco-input }}
+          MISSING_EXT: ${{ steps.test.outputs.expected-missing-extension }}
+          MISSING_FEAT: ${{ steps.test.outputs.expected-missing-feature }}
+        run: |
+          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ### WASM gltfpack Test Results
+
+          | Metric              | Count             |
+          | ------------------- | ----------------- |
+          | Bundled version     | ${VERSION_BEFORE} |
+          | Tested version      | ${VERSION_AFTER}  |
+          | Passed              | ${PASSED}         |
+          | Unexpected failures | ${UNEXPECTED}     |
+
+          #### Expected Failures (WASM limitations)
+
+          | Category           | Count            | Reason                                  |
+          | ------------------ | ---------------- | --------------------------------------- |
+          | external-resources | ${EXT_RESOURCES} | No filesystem access for .bin/.textures |
+          | draco-input        | ${DRACO_INPUT}   | Draco decompression not supported       |
+          | missing-extension  | ${MISSING_EXT}   | Required glTF extension unavailable     |
+          | missing-feature    | ${MISSING_FEAT}  | Required feature unavailable            |
+          EOF

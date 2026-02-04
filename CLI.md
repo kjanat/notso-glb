@@ -28,7 +28,7 @@ notso-glb [OPTIONS] FILE
 - `--autofix / --stable`: Auto-decimate bloated props, remove unused UVs
   \[default: stable\]
 - `--gltfpack / --no-gltfpack`: Post-process with gltfpack for extra compression
-  (enabled if gltfpack is installed) \[default: gltfpack\]
+  (WASM fallback if native unavailable) \[default: gltfpack\]
 - `-q, --quiet / -v, --verbose`: Suppress Blender's verbose output (show only
   warnings/errors) \[default: quiet\]
 - `-V, --version`: Show the version and exit.

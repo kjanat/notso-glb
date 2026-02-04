@@ -11,8 +11,7 @@ env: { UV_PYTHON: "3.11" }
 jobs:
   test:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    permissions: { contents: read }
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -23,6 +22,10 @@ jobs:
 
       - name: Install dependencies
         run: uv sync
+
+      - name: Download latest WASM from npm
+        id: wasm
+        uses: ./.github/actions/download-wasm
 
       - name: Run linting
         run: |
@@ -46,6 +49,15 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
+
+      - name: Download latest WASM from npm
+        id: wasm
+        uses: ./.github/actions/download-wasm
+
+      - name: Verify WASM downloaded
+        run: |
+          ls -la src/notso_glb/wasm/
+          cat src/notso_glb/wasm/gltfpack.version
 
       - name: Build package
         id: build

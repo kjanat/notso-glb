@@ -1,0 +1,47 @@
+name: Test WASM Models
+description: Test gltfpack WASM against three.js glTF models
+
+inputs:
+  model-dir:
+    description: "Path to test models directory"
+    required: false
+    default: "test-models/three.js/examples/models/gltf"
+  max-models:
+    description: "Maximum number of models to test"
+    required: false
+    default: "30"
+
+outputs:
+  passed:
+    description: Number of tests passed
+    value: ${{ steps.test.outputs.passed }}
+  expected-failed:
+    description: Total expected failures (WASM limitations)
+    value: ${{ steps.test.outputs.expected-failed }}
+  unexpected-failed:
+    description: Number of unexpected failures (real bugs)
+    value: ${{ steps.test.outputs.unexpected-failed }}
+  expected-external-resources:
+    description: Expected failures due to external resources
+    value: ${{ steps.test.outputs.expected-external-resources }}
+  expected-draco-input:
+    description: Expected failures due to Draco input
+    value: ${{ steps.test.outputs.expected-draco-input }}
+  expected-missing-extension:
+    description: Expected failures due to missing extension
+    value: ${{ steps.test.outputs.expected-missing-extension }}
+  expected-missing-feature:
+    description: Expected failures due to missing feature
+    value: ${{ steps.test.outputs.expected-missing-feature }}
+
+runs:
+  using: composite
+  steps:
+    - name: Run WASM model tests
+      id: test
+      shell: bash
+      env:
+        MODEL_DIR: ${{ inputs.model-dir }}
+        MAX_MODELS: ${{ inputs.max-models }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: uv run "${ACTION_PATH}/test.py"
