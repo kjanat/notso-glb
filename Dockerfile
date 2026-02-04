@@ -56,15 +56,15 @@ RUN uv run scripts/update_wasm.py
 RUN find .venv -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true \
     && find .venv -type f -name "*.pyc" -delete 2>/dev/null || true \
     && find .venv -type f -name "*.pyo" -delete 2>/dev/null || true \
-    # Remove Blender datafiles we don't need for headless GLB processing
+# Remove Blender datafiles we don't need for headless GLB processing
     && rm -rf .venv/lib/python3.11/site-packages/bpy/5.0/datafiles/locale 2>/dev/null || true \
     && rm -rf .venv/lib/python3.11/site-packages/bpy/5.0/datafiles/fonts 2>/dev/null || true \
     && rm -rf .venv/lib/python3.11/site-packages/bpy/5.0/datafiles/icons 2>/dev/null || true \
     && rm -rf .venv/lib/python3.11/site-packages/bpy/5.0/datafiles/studiolights 2>/dev/null || true \
     && rm -rf .venv/lib/python3.11/site-packages/bpy/5.0/datafiles/colormanagement 2>/dev/null || true \
-    # Remove Blender's bundled Python (we use system Python)
+# Remove Blender's bundled Python (we use system Python)
     && rm -rf .venv/lib/python3.11/site-packages/bpy/5.0/python 2>/dev/null || true \
-    # Remove unnecessary scripts (keep addons_core for glTF export)
+# Remove unnecessary scripts (keep addons_core for glTF export)
     && rm -rf .venv/lib/python3.11/site-packages/bpy/5.0/scripts/startup 2>/dev/null || true \
     && rm -rf .venv/lib/python3.11/site-packages/bpy/5.0/scripts/templates* 2>/dev/null || true \
     && rm -rf .venv/lib/python3.11/site-packages/bpy/5.0/scripts/presets 2>/dev/null || true \
