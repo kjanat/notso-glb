@@ -1,6 +1,6 @@
 [project]
 name            = "notso-glb"
-version         = "0.1.0"
+version         = "1.0.0"
 description     = "GLB Export Optimizer for Mascot Models"
 readme          = "README.md"
 requires-python = "~=3.11.0"
