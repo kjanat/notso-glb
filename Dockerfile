@@ -24,12 +24,15 @@ WORKDIR /app
 # Copy dependency files first for better layer caching
 COPY pyproject.toml uv.lock ./
 
-# Install production dependencies only (no dev dependencies)
-RUN uv sync --no-dev --frozen
+# Install dependencies only (not the project itself yet)
+RUN uv sync --no-dev --frozen --no-install-project
 
 # Copy source code and scripts
 COPY src/ ./src/
 COPY scripts/ ./scripts/
+
+# Now install the project itself
+RUN uv sync --no-dev --frozen
 
 # Download gltfpack WASM binary from npm
 RUN uv run scripts/update_wasm.py
