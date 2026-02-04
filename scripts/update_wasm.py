@@ -29,7 +29,7 @@ BUNDLE_PATH = (
 VERSION_PATH = BUNDLE_PATH.with_suffix(".version")
 
 
-def get_npm_info() -> dict:
+def get_npm_info() -> dict[str, Any]:
     """Fetch full npm package info."""
     with urllib.request.urlopen(NPM_REGISTRY_URL, timeout=30) as resp:
         return json.loads(resp.read().decode("utf-8"))

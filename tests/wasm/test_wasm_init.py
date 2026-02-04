@@ -193,7 +193,7 @@ class TestRunGltfpackWasm:
         mock_get_gltfpack: MagicMock,
         mock_is_avail: MagicMock,
         tmp_path: Path,
-        capsys,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         """Should skip texture_compress and print warning."""
         from notso_glb.wasm import run_gltfpack_wasm

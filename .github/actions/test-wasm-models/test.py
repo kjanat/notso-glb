@@ -92,8 +92,8 @@ def main() -> int:
         rel_path = model.relative_to(MODEL_DIR)
         size_kb = model.stat().st_size / 1024
 
-        with tempfile.NamedTemporaryFile(suffix=".glb", delete=True) as tmp:
-            out_path = Path(tmp.name)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_path = Path(tmpdir) / "output.glb"
             try:
                 success, _, msg = run_gltfpack_wasm(
                     model,

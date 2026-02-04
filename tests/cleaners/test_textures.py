@@ -92,15 +92,16 @@ class TestResizeTextures:
         """Should skip special Render Result image."""
         from notso_glb.cleaners import resize_textures
 
-        # Render Result is typically created by Blender
-        # We'll verify the skip logic by checking return count
         img = bpy.data.images.new("UserImage", width=2048, height=2048)
+        render_result = bpy.data.images.new("Render Result", width=2048, height=2048)
 
-        resized = resize_textures(max_size=1024)
-        # Should only resize user image, not Render Result
-        assert resized >= 1
-
-        bpy.data.images.remove(img)
+        try:
+            resized = resize_textures(max_size=1024)
+            # Should resize user image but skip Render Result
+            assert resized == 1
+        finally:
+            bpy.data.images.remove(img)
+            bpy.data.images.remove(render_result)
 
     def test_skips_already_pot_images_when_force_pot(self) -> None:
         """Should skip images that are already power-of-two."""
@@ -168,30 +169,33 @@ class TestResizeTextures:
         bpy.data.images.remove(img2)
         bpy.data.images.remove(img3)
 
-    def test_resize_failure_doesnt_crash(self) -> None:
+    def test_resize_exception_handling(self) -> None:
         """Should handle resize failures gracefully."""
+        from unittest.mock import patch
+
         from notso_glb.cleaners import resize_textures
 
-        # Create an image
         img = bpy.data.images.new("TestImage", width=2048, height=2048)
 
-        # Should not crash even if resize fails
         try:
-            resized = resize_textures(max_size=1024)
-            assert isinstance(resized, int)
+            with patch.object(
+                img, "scale", side_effect=RuntimeError("Mock scale failure")
+            ):
+                resized = resize_textures(max_size=1024)
+                assert isinstance(resized, int)
+                assert resized >= 0  # Should handle exception gracefully
         finally:
             bpy.data.images.remove(img)
 
-    def test_zero_max_size_skips_all(self) -> None:
-        """max_size=0 should skip resizing."""
+    def test_large_max_size_skips_small_images(self) -> None:
+        """Large max_size should skip images already smaller."""
         from notso_glb.cleaners import resize_textures
 
-        img = bpy.data.images.new("NoResize", width=2048, height=2048)
+        img = bpy.data.images.new("SmallImage", width=2048, height=2048)
 
-        # With max_size=0, should skip all resizing
-        # However, the function doesn't explicitly handle 0
-        # Let's test with a very large max_size instead
-        resized = resize_textures(max_size=8192)
-        assert resized == 0  # Image already smaller than max_size
-
-        bpy.data.images.remove(img)
+        try:
+            # Image 2048x2048 is smaller than 8192, should skip
+            resized = resize_textures(max_size=8192)
+            assert resized == 0
+        finally:
+            bpy.data.images.remove(img)
