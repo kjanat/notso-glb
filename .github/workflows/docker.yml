@@ -93,7 +93,7 @@ jobs:
             --user $(id -u):$(id -g) \
             -v ${{ github.workspace }}/test-models:/data \
             ${{ env.TEST_TAG }} \
-            /data/BoxAnimated.glb -o /data/BoxAnimated-gltfpack.glb --gltfpack
+            /data/BoxAnimated.glb -o /data/BoxAnimated-gltfpack.glb --gltfpack --no-draco
 
       - name: Compare output sizes
         run: |
