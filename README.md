@@ -3,9 +3,7 @@
 > Cleans up Blender files and exports optimized GLB for web delivery.
 
 ```bash
-uvx -p3.11 \
-  --from git+https://github.com/kjanat/notso-glb \
-  notso-glb [OPTIONS] FILE
+uvx notso-glb [OPTIONS] FILE
 ```
 
 <p align="center">
@@ -14,9 +12,21 @@ uvx -p3.11 \
   </a>
 </p>
 
+<p align="center">
+  <a href="https://pypi.org/project/notso-glb/"><img src="https://img.shields.io/pypi/v/notso-glb" alt="PyPI"></a>
+  <a href="https://pypi.org/project/notso-glb/"><img src="https://img.shields.io/pypi/dm/notso-glb" alt="Downloads"></a>  <!--<a href="https://github.com/kjanat/notso-glb/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/kjanat/notso-glb/ci.yml?branch=master" alt="CI"></a>-->
+  <a href="https://github.com/kjanat/notso-glb/blob/master/LICENSE"><img src="https://img.shields.io/github/license/kjanat/notso-glb" alt="License"></a>  <!--<a href="https://notso-glb.kjanat.com"><img src="https://img.shields.io/badge/docs-mkdocs-blue" alt="Docs"></a>-->
+  <img src="https://img.shields.io/badge/python-3.11-blue" alt="Python 3.11">
+</p>
+
 ## Install
 
 ```bash
+uv tool install notso-glb
+```
+
+```bash
+# Or install directly from GitHub:
 uv tool install -p3.11 git+https://github.com/kjanat/notso-glb
 ```
 
@@ -93,12 +103,22 @@ must be downloaded locally. CI/CD pipelines handle this automatically.
 - [Blender 5.0 Python API Documentation]
 - [Blender 5.0 Reference Manual]
 
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the
+[LICENSE] file for details.
+
+This project uses [Blender] as a Python module (bpy), which is also GPL-3.0
+licensed.
+
 [Khronos Resources]: https://github.khronos.org/
 [glTF 2.0 Specification]: https://www.khronos.org/gltf/#gltf-spec
 [glTF 2.0 API Reference Guide]: https://www.khronos.org/files/gltf20-reference-guide.pdf
 [Blender 5.0 Reference Manual]: https://docs.blender.org/manual/en/latest
 [Blender 5.0 glTF 2.0]: https://docs.blender.org/manual/en/5.0/addons/import_export/scene_gltf2.html
 [Blender 5.0 Python API Documentation]: https://docs.blender.org/api/current/index.html
+[Blender]: https://www.blender.org/
 [CLI.md]: https://github.com/kjanat/notso-glb/blob/master/CLI.md
+[LICENSE]: https://github.com/kjanat/notso-glb/blob/master/LICENSE
 
 <!-- markdownlint-disable-file MD033 -->
