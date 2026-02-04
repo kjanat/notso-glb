@@ -216,6 +216,7 @@ def optimize(
 
     # Post-process with gltfpack if enabled
     if use_gltfpack:
+        from notso_glb.utils.draco import has_draco_compression
         from notso_glb.utils.gltfpack import run_gltfpack
         from notso_glb.utils.logging import format_bytes
         from notso_glb.wasm import is_available as wasm_available
@@ -232,11 +233,22 @@ def optimize(
             console.print(f"\n[bold cyan]Running gltfpack ({backend})...[/]")
             original_size = Path(result).stat().st_size
 
+            # Auto-detect Draco compression in the result file
+            # gltfpack cannot process Draco-compressed input, so disable mesh_compress
+            # This also prevents double Draco compression
+            gltfpack_mesh_compress = True
+            if has_draco_compression(result):
+                console.print(
+                    "  [yellow]Draco compression detected, "
+                    "disabling gltfpack mesh compression (--no-draco)[/]"
+                )
+                gltfpack_mesh_compress = False
+
             success, packed_path, msg = run_gltfpack(
                 Path(result),
                 output_path=Path(result),  # Overwrite original
                 texture_compress=True,
-                mesh_compress=True,
+                mesh_compress=gltfpack_mesh_compress,
             )
 
             if success:
