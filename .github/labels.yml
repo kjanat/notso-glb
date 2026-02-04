@@ -24,6 +24,18 @@ labels:
     color: "#5319e7"
     description: Performance improvements
 
+  - name: testing
+    color: "#fbca04"
+    description: Test-related changes
+
+  - name: dependencies
+    color: "#0366d6"
+    description: Dependency updates
+
+  - name: breaking
+    color: "#b60205"
+    description: Breaking changes
+
   # Priority labels
   - name: "priority: critical"
     color: "#b60205"
@@ -32,6 +44,10 @@ labels:
   - name: "priority: high"
     color: "#d93f0b"
     description: High priority issue
+
+  - name: "priority: medium"
+    color: "#fbca04"
+    description: Medium priority issue
 
   - name: "priority: low"
     color: "#0e8a16"
@@ -66,6 +82,39 @@ labels:
   - name: "component: textures"
     color: "#1d76db"
     description: Related to texture processing
+
+  - name: "component: cleaners"
+    color: "#1d76db"
+    description: Related to mesh/bone/UV cleaners
+
+  - name: "component: wasm"
+    color: "#1d76db"
+    description: Related to WASM/wasmtime integration
+
+  - name: "component: blender"
+    color: "#1d76db"
+    description: Related to Blender/bpy integration
+
+  - name: "component: gltfpack"
+    color: "#1d76db"
+    description: Related to gltfpack integration
+
+  - name: "component: compression"
+    color: "#1d76db"
+    description: Related to Draco/mesh compression
+
+  # Infrastructure labels
+  - name: "infra: docker"
+    color: "#0e8a16"
+    description: Related to Docker/containerization
+
+  - name: "infra: ci"
+    color: "#0e8a16"
+    description: Related to CI/CD workflows
+
+  - name: "infra: pypi"
+    color: "#0e8a16"
+    description: Related to PyPI packaging/publishing
 
   # Misc labels
   - name: good first issue

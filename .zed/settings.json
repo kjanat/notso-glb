@@ -8,9 +8,8 @@
       "language_servers": ["pylsp", "ty", "ruff", "basedpyright", "..."],
       "wrap_guides": [88]
     },
-    "TOML": {
-      "wrap_guides": [110]
-    }
+    "TOML": { "wrap_guides": [110] },
+    "YAML": { "wrap_guides": [140] }
   },
   "context_servers": {
     "blender": {
