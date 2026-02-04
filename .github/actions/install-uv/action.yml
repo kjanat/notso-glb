@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-action.json
+---
+name: Install uv
+description: Ensure uv is installed
+
+inputs:
+  version:
+    description: "The version of uv to install e.g., `0.5.0` Defaults to the version in pyproject.toml or 'latest'."
+    default: ""
+  python-version:
+    description: "The version of Python to set UV_PYTHON to"
+    required: false
+  version-file:
+    description: "Path to a file containing the version of uv to install. Defaults to searching for uv.toml and if not found pyproject.toml."
+    default: ""
+  activate-environment:
+    description: "Use uv venv to activate a venv ready to be used by later steps. "
+    default: "false"
+
+outputs:
+  uv-version:
+    value: ${{ steps.check-uv.outputs.uv-version || steps.install.outputs.uv-version }}
+    description: "The installed uv version. Useful when using latest."
+  uv-path:
+    value: ${{ steps.check-uv.outputs.uv-path || steps.install.outputs.uv-path }}
+    description: "The path to the installed uv binary."
+  uvx-path:
+    value: ${{ steps.check-uv.outputs.uvx-path || steps.install.outputs.uvx-path }}
+    description: "The path to the installed uvx binary."
+  venv:
+    value: ${{ steps.check-uv.outputs.venv || steps.install.outputs.venv }}
+    description: "Path to the activated venv if activate-environment is true"
+
+runs:
+  using: composite
+  steps:
+    - name: Check if uv is available
+      id: check-uv
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        ACTIVATE_ENVIRONMENT: ${{ inputs.activate-environment }}
+        INPUT_PYTHON_VERSION: ${{ inputs.python-version }}
+      run: "${ACTION_PATH}/uv-available.sh"
+    - name: Install uv
+      id: install
+      if: steps.check-uv.outputs.uv-available == 'false'
+      uses: astral-sh/setup-uv@v7
+      with:
+        version: ${{ inputs.version }}
+        version-file: ${{ inputs.version-file }}
+        python-version: ${{ inputs.python-version }}
+        activate-environment: ${{ inputs.activate-environment }}
