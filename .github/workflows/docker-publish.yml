@@ -34,11 +34,11 @@ jobs:
         id: pkg
         run: |
           if [[ -f version.txt ]]; then
-            VERSION=$(cat version.txt)
-            echo "spec=notso-glb==${VERSION}" | tee -a "${GITHUB_OUTPUT}"
+            VERSION=$(cat version.txt | tr -d '[:space:]')
+            printf "spec=notso-glb==%s" "${VERSION}" | tee -a "${GITHUB_OUTPUT}"
             echo "Installing notso-glb==${VERSION}"
           else
-            echo "spec=notso-glb" | tee -a "${GITHUB_OUTPUT}"
+            printf "spec=notso-glb" | tee -a "${GITHUB_OUTPUT}"
             echo "Installing latest notso-glb"
             echo "::warning::version.txt not found, defaulting to latest notso-glb"
           fi
