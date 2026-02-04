@@ -92,7 +92,7 @@ def _select_backend(
     return False, None
 
 
-def _resolve_output_path(input_path: Path, output_path: Path | None) -> Path:
+def _resolve_output_path(input_path: Path, output_path: str | Path | None) -> Path:
     """Resolve output path, defaulting to input_packed.glb."""
     if output_path is not None:
         return Path(output_path)
@@ -127,7 +127,7 @@ def _validate_simplify_ratio(
 
 
 def _validate_texture_quality(
-    quality: int | None,
+    quality: int | float | None,
     input_path: Path,
 ) -> tuple[int | None, GltfpackResult | None]:
     """Validate texture_quality, return (validated_value, error_or_none)."""
@@ -196,8 +196,8 @@ def _run_native_gltfpack(
 
 
 def run_gltfpack(
-    input_path: Path,
-    output_path: Path | None = None,
+    input_path: str | Path,
+    output_path: str | Path | None = None,
     *,
     texture_compress: bool = True,
     mesh_compress: bool = True,

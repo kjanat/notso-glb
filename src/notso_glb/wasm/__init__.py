@@ -42,9 +42,65 @@ def get_gltfpack() -> GltfpackWasm:
     return _gltfpack
 
 
-def run_gltfpack_wasm(
+def _resolve_wasm_output_path(input_path: Path, output_path: str | Path | None) -> Path:
+    """Resolve output path, defaulting to input_packed.glb."""
+    if output_path is not None:
+        return Path(output_path)
+    stem = input_path.stem
+    if stem.endswith("_packed"):
+        stem = stem[:-7]
+    return input_path.parent / f"{stem}_packed{input_path.suffix}"
+
+
+def _build_wasm_args(
+    mesh_compress: bool,
+    simplify_ratio: float | None,
     input_path: Path,
-    output_path: Path | None = None,
+) -> tuple[list[str], str | None]:
+    """Build gltfpack args, return (args, error_message)."""
+    args: list[str] = []
+    if mesh_compress:
+        args.append("-cc")
+    if simplify_ratio is not None:
+        if not (0.0 <= simplify_ratio <= 1.0):
+            return [], f"simplify_ratio must be [0.0, 1.0]: {simplify_ratio}"
+        args.extend(["-si", str(simplify_ratio)])
+    return args, None
+
+
+def _execute_wasm_gltfpack(
+    input_path: Path,
+    output_path: Path,
+    args: list[str],
+) -> tuple[bool, Path, str]:
+    """Execute gltfpack WASM and handle errors."""
+    try:
+        gltfpack = get_gltfpack()
+        input_data = input_path.read_bytes()
+        success, output_data, log = gltfpack.pack(
+            input_data,
+            input_name=input_path.name,
+            output_name=output_path.name,
+            args=args,
+        )
+
+        if not success:
+            return False, output_path, f"gltfpack failed: {log}"
+
+        output_path.write_bytes(output_data)
+        return True, output_path, "Success"
+
+    except UnicodeDecodeError as e:
+        return False, output_path, f"Log decode error: {e}"
+    except OSError as e:
+        return False, output_path, f"File I/O error: {e}"
+    except (ValueError, TypeError) as e:
+        return False, output_path, f"Argument error: {e}"
+
+
+def run_gltfpack_wasm(
+    input_path: str | Path,
+    output_path: str | Path | None = None,
     *,
     texture_compress: bool = True,
     mesh_compress: bool = True,
@@ -65,58 +121,26 @@ def run_gltfpack_wasm(
     Returns:
         Tuple of (success, output_path, message)
     """
+    # Convert to Path early for consistent return types
+    input_path = Path(input_path)
+
     if not is_available():
         return False, input_path, "WASM runtime not available"
 
-    input_path = Path(input_path)
     if not input_path.is_file():
         return False, input_path, f"Input file not found: {input_path}"
 
-    if output_path is None:
-        stem = input_path.stem
-        if stem.endswith("_packed"):
-            stem = stem[:-7]
-        output_path = input_path.parent / f"{stem}_packed{input_path.suffix}"
+    output_path = _resolve_wasm_output_path(input_path, output_path)
 
-    output_path = Path(output_path)
-
-    args: list[str] = []
     if texture_compress:
         # WASM build lacks BasisU support, skip -tc with warning
         print("[WARN] WASM gltfpack lacks BasisU support, skipping texture compression")
-    if mesh_compress:
-        args.append("-cc")
-    if simplify_ratio is not None:
-        if not (0.0 <= simplify_ratio <= 1.0):
-            return (
-                False,
-                input_path,
-                f"simplify_ratio must be [0.0, 1.0]: {simplify_ratio}",
-            )
-        args.extend(["-si", str(simplify_ratio)])
-    if texture_quality is not None:
-        # texture_quality only applies with -tc, which WASM doesn't support
-        pass
 
-    try:
-        gltfpack = get_gltfpack()
-        input_data = input_path.read_bytes()
-        success, output_data, log = gltfpack.pack(
-            input_data,
-            input_name=input_path.name,
-            output_name=output_path.name,
-            args=args,
-        )
+    # texture_quality only applies with -tc, which WASM doesn't support
+    del texture_quality
 
-        if not success:
-            return False, output_path, f"gltfpack failed: {log}"
+    args, error = _build_wasm_args(mesh_compress, simplify_ratio, input_path)
+    if error:
+        return False, input_path, error
 
-        output_path.write_bytes(output_data)
-        return True, output_path, "Success"
-
-    except OSError as e:
-        return False, output_path, f"File I/O error: {e}"
-    except (ValueError, TypeError) as e:
-        return False, output_path, f"Argument error: {e}"
-    except UnicodeDecodeError as e:
-        return False, output_path, f"Log decode error: {e}"
+    return _execute_wasm_gltfpack(input_path, output_path, args)

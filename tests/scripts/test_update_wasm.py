@@ -425,7 +425,7 @@ class TestEdgeCases:
 
         # Create empty tarball
         tar_buffer = io.BytesIO()
-        with tarfile.open(fileobj=tar_buffer, mode="w:gz") as tar:
+        with tarfile.open(fileobj=tar_buffer, mode="w:gz"):
             pass
         tar_buffer.seek(0)
 
@@ -473,7 +473,7 @@ class TestEdgeCases:
 
         with patch("scripts.update_wasm.BUNDLE_PATH", bundle_path):
             with patch("scripts.update_wasm.VERSION_PATH", version_path):
-                updated, msg = update_bundle()
+                updated, _ = update_bundle()
 
         assert updated is True
         assert bundle_path.stat().st_size > 10 * 1024 * 1024

@@ -38,7 +38,7 @@ class TestGetBundledVersion:
         )
 
         try:
-            from test import get_bundled_version, VERSION_PATH
+            from test import get_bundled_version  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -54,7 +54,7 @@ class TestGetBundledVersion:
     def test_returns_unknown_when_missing(self, tmp_path: Path) -> None:
         """Should return 'unknown' when file doesn't exist."""
         try:
-            from test import get_bundled_version
+            from test import get_bundled_version  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -73,7 +73,7 @@ class TestClassifyFailure:
     def test_identifies_external_resources(self) -> None:
         """Should identify external resource failures."""
         try:
-            from test import classify_failure
+            from test import classify_failure  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -86,7 +86,7 @@ class TestClassifyFailure:
     def test_identifies_draco_input(self) -> None:
         """Should identify Draco input failures."""
         try:
-            from test import classify_failure
+            from test import classify_failure  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -99,7 +99,7 @@ class TestClassifyFailure:
     def test_identifies_missing_extension(self) -> None:
         """Should identify missing extension failures."""
         try:
-            from test import classify_failure
+            from test import classify_failure  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -112,7 +112,7 @@ class TestClassifyFailure:
     def test_identifies_missing_feature(self) -> None:
         """Should identify missing feature failures."""
         try:
-            from test import classify_failure
+            from test import classify_failure  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -125,7 +125,7 @@ class TestClassifyFailure:
     def test_identifies_unexpected_failure(self) -> None:
         """Should identify unexpected failures."""
         try:
-            from test import classify_failure
+            from test import classify_failure  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -143,7 +143,7 @@ class TestMain:
     def test_exits_when_wasm_unavailable(self, mock_is_avail: MagicMock) -> None:
         """Should exit with error when WASM unavailable."""
         try:
-            from test import main
+            from test import main  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -167,7 +167,7 @@ class TestMain:
     ) -> None:
         """Should display WASM version and path info."""
         try:
-            from test import main, MODEL_DIR
+            from test import main  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -203,7 +203,7 @@ class TestMain:
     ) -> None:
         """Should process .glb files."""
         try:
-            from test import main
+            from test import main  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -243,7 +243,7 @@ class TestMain:
     ) -> None:
         """Should process .gltf files."""
         try:
-            from test import main
+            from test import main  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -282,7 +282,7 @@ class TestMain:
     ) -> None:
         """Should respect MAX_MODELS limit."""
         try:
-            from test import main
+            from test import main  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -322,7 +322,7 @@ class TestMain:
     ) -> None:
         """Should skip files larger than MAX_FILE_SIZE."""
         try:
-            from test import main, MAX_FILE_SIZE
+            from test import MAX_FILE_SIZE, main  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -359,7 +359,7 @@ class TestMain:
     ) -> None:
         """Should return error when unexpected failures occur."""
         try:
-            from test import main
+            from test import main  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -399,7 +399,7 @@ class TestMain:
     ) -> None:
         """Should write results to GITHUB_OUTPUT."""
         try:
-            from test import main
+            from test import main  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -445,7 +445,7 @@ class TestMain:
     ) -> None:
         """Should handle exceptions during processing."""
         try:
-            from test import main
+            from test import main  # type: ignore[import-not-found]
         except ImportError:
             pytest.skip("Test script not importable")
             return
@@ -478,7 +478,10 @@ class TestCategoryDescriptions:
     def test_all_categories_have_descriptions(self) -> None:
         """All expected failure categories should have descriptions."""
         try:
-            from test import CATEGORY_DESCRIPTIONS, EXPECTED_FAILURES
+            from test import (  # type: ignore[import-not-found]
+                CATEGORY_DESCRIPTIONS,
+                EXPECTED_FAILURES,
+            )
         except ImportError:
             pytest.skip("Test script not importable")
             return

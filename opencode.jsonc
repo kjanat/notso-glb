@@ -29,7 +29,6 @@
       "command": [".venv/bin/ty", "server"],
       "extensions": [".py", ".pyi", ".ipynb"],
     },
-    "pyright": { "disabled": true },
   },
   "formatter": {
     "dprint": {

@@ -39,7 +39,7 @@ class TestSelectBackend:
 
     @patch("notso_glb.utils.gltfpack._wasm_available")
     def test_forces_native_backend(
-        self, mock_wasm_avail: MagicMock, tmp_path: Path
+        self, _mock_wasm_avail: MagicMock, tmp_path: Path
     ) -> None:
         """Should force native backend when ENV_FORCE_NATIVE is set."""
         from notso_glb.utils.gltfpack import _select_backend
@@ -350,7 +350,7 @@ class TestRunNativeGltfpack:
             returncode=1, stdout="", stderr="Error processing file"
         )
 
-        success, path, msg = _run_native_gltfpack(["gltfpack"], output_path)
+        success, _, msg = _run_native_gltfpack(["gltfpack"], output_path)
 
         assert success is False
         assert "failed" in msg.lower()
@@ -363,7 +363,7 @@ class TestRunNativeGltfpack:
         output_path = tmp_path / "output.glb"
         mock_run.side_effect = subprocess.TimeoutExpired("gltfpack", 300)
 
-        success, path, msg = _run_native_gltfpack(["gltfpack"], output_path)
+        success, _, msg = _run_native_gltfpack(["gltfpack"], output_path)
 
         assert success is False
         assert "timed out" in msg.lower()
@@ -378,7 +378,7 @@ class TestRunNativeGltfpack:
         output_path = tmp_path / "output.glb"
         mock_run.side_effect = OSError("Command not found")
 
-        success, path, msg = _run_native_gltfpack(["gltfpack"], output_path)
+        success, _, msg = _run_native_gltfpack(["gltfpack"], output_path)
 
         assert success is False
         assert "error" in msg.lower()
@@ -402,7 +402,7 @@ class TestRunGltfpack:
         mock_find.return_value = "/usr/bin/gltfpack"
         mock_run_native.return_value = (True, output_path, "Success")
 
-        success, path, msg = run_gltfpack(input_path, output_path)
+        success, path, _ = run_gltfpack(input_path, output_path)
 
         assert success is True
         assert path == output_path
@@ -424,7 +424,7 @@ class TestRunGltfpack:
 
         with patch("notso_glb.wasm.run_gltfpack_wasm") as mock_wasm_run:
             mock_wasm_run.return_value = (True, input_path, "Success")
-            success, path, msg = run_gltfpack(input_path, prefer_wasm=True)
+            success, _, _ = run_gltfpack(input_path, prefer_wasm=True)
 
         assert success is True
         mock_wasm_run.assert_called_once()
@@ -438,7 +438,7 @@ class TestRunGltfpack:
         with patch(
             "notso_glb.utils.gltfpack.find_gltfpack", return_value="/usr/bin/gltfpack"
         ):
-            success, path, msg = run_gltfpack(input_path)
+            success, _, msg = run_gltfpack(input_path)
 
         assert success is False
         assert "not found" in msg.lower()
@@ -446,7 +446,7 @@ class TestRunGltfpack:
     @patch("notso_glb.utils.gltfpack.find_gltfpack")
     @patch("notso_glb.utils.gltfpack._run_native_gltfpack")
     def test_validates_simplify_ratio(
-        self, mock_run_native: MagicMock, mock_find: MagicMock, tmp_path: Path
+        self, _mock_run_native: MagicMock, mock_find: MagicMock, tmp_path: Path
     ) -> None:
         """Should validate simplify_ratio parameter."""
         from notso_glb.utils.gltfpack import run_gltfpack
@@ -456,7 +456,7 @@ class TestRunGltfpack:
 
         mock_find.return_value = "/usr/bin/gltfpack"
 
-        success, path, msg = run_gltfpack(input_path, simplify_ratio=1.5)
+        success, _, msg = run_gltfpack(input_path, simplify_ratio=1.5)
 
         assert success is False
         assert "simplify_ratio" in msg.lower()
@@ -464,7 +464,7 @@ class TestRunGltfpack:
     @patch("notso_glb.utils.gltfpack.find_gltfpack")
     @patch("notso_glb.utils.gltfpack._run_native_gltfpack")
     def test_validates_texture_quality(
-        self, mock_run_native: MagicMock, mock_find: MagicMock, tmp_path: Path
+        self, _mock_run_native: MagicMock, mock_find: MagicMock, tmp_path: Path
     ) -> None:
         """Should validate texture_quality parameter."""
         from notso_glb.utils.gltfpack import run_gltfpack
@@ -474,7 +474,7 @@ class TestRunGltfpack:
 
         mock_find.return_value = "/usr/bin/gltfpack"
 
-        success, path, msg = run_gltfpack(input_path, texture_quality=11)
+        success, _, msg = run_gltfpack(input_path, texture_quality=11)
 
         assert success is False
         assert "texture_quality" in msg.lower()
@@ -547,7 +547,7 @@ class TestEdgeCases:
 
         with patch("notso_glb.utils.gltfpack.find_gltfpack", return_value=None):
             with patch("notso_glb.utils.gltfpack._wasm_available", return_value=False):
-                success, path, msg = run_gltfpack(input_path)
+                success, path, _ = run_gltfpack(input_path)
 
         assert success is False
         assert isinstance(path, Path)
@@ -567,7 +567,7 @@ class TestEdgeCases:
         mock_find.return_value = "/usr/bin/gltfpack"
         mock_run_native.return_value = (True, output_path, "Success")
 
-        success, path, msg = run_gltfpack(str(input_path), str(output_path))
+        success, _, _ = run_gltfpack(str(input_path), str(output_path))
 
         assert success is True
 
@@ -583,7 +583,7 @@ class TestEdgeCases:
         ):
             with patch("notso_glb.utils.gltfpack._run_native_gltfpack") as mock_run:
                 mock_run.return_value = (True, input_path, "Success")
-                success, path, msg = run_gltfpack(input_path, simplify_ratio=0.0)
+                success, _, _ = run_gltfpack(input_path, simplify_ratio=0.0)
 
         assert success is True
 
@@ -599,6 +599,6 @@ class TestEdgeCases:
         ):
             with patch("notso_glb.utils.gltfpack._run_native_gltfpack") as mock_run:
                 mock_run.return_value = (True, input_path, "Success")
-                success, path, msg = run_gltfpack(input_path, simplify_ratio=1.0)
+                success, _, _ = run_gltfpack(input_path, simplify_ratio=1.0)
 
         assert success is True

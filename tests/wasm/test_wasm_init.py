@@ -87,7 +87,7 @@ class TestRunGltfpackWasm:
         mock_is_avail.return_value = False
         input_path = tmp_path / "input.glb"
 
-        success, path, msg = run_gltfpack_wasm(input_path)
+        success, _, msg = run_gltfpack_wasm(input_path)
 
         assert success is False
         assert "not available" in msg
@@ -102,7 +102,7 @@ class TestRunGltfpackWasm:
         mock_is_avail.return_value = True
         input_path = tmp_path / "nonexistent.glb"
 
-        success, path, msg = run_gltfpack_wasm(input_path)
+        success, _, msg = run_gltfpack_wasm(input_path)
 
         assert success is False
         assert "not found" in msg
@@ -123,7 +123,7 @@ class TestRunGltfpackWasm:
         mock_instance.pack.return_value = (True, b"output", "Success")
         mock_get_gltfpack.return_value = mock_instance
 
-        success, path, msg = run_gltfpack_wasm(input_path)
+        _, path, _ = run_gltfpack_wasm(input_path)
 
         assert path == tmp_path / "model_packed.glb"
 
@@ -143,14 +143,14 @@ class TestRunGltfpackWasm:
         mock_instance.pack.return_value = (True, b"output", "Success")
         mock_get_gltfpack.return_value = mock_instance
 
-        success, path, msg = run_gltfpack_wasm(input_path)
+        _, path, _ = run_gltfpack_wasm(input_path)
 
         assert path == tmp_path / "model_packed.glb"
 
     @patch("notso_glb.wasm.is_available")
     @patch("notso_glb.wasm.get_gltfpack")
     def test_validates_simplify_ratio_range(
-        self, mock_get_gltfpack: MagicMock, mock_is_avail: MagicMock, tmp_path: Path
+        self, _mock_get_gltfpack: MagicMock, mock_is_avail: MagicMock, tmp_path: Path
     ) -> None:
         """Should validate simplify_ratio is in [0.0, 1.0]."""
         from notso_glb.wasm import run_gltfpack_wasm
@@ -159,7 +159,7 @@ class TestRunGltfpackWasm:
         input_path = tmp_path / "model.glb"
         input_path.write_bytes(b"\x00asm")
 
-        success, path, msg = run_gltfpack_wasm(input_path, simplify_ratio=1.5)
+        success, _, msg = run_gltfpack_wasm(input_path, simplify_ratio=1.5)
 
         assert success is False
         assert "simplify_ratio" in msg
@@ -227,7 +227,7 @@ class TestRunGltfpackWasm:
         mock_instance.pack.return_value = (True, b"output", "Success")
         mock_get_gltfpack.return_value = mock_instance
 
-        success, path, msg = run_gltfpack_wasm(input_path, texture_quality=8)
+        success, _, _ = run_gltfpack_wasm(input_path, texture_quality=8)
 
         # Should succeed but ignore texture_quality
         assert success is True
@@ -248,7 +248,7 @@ class TestRunGltfpackWasm:
         mock_instance.pack.return_value = (False, b"", "Pack failed")
         mock_get_gltfpack.return_value = mock_instance
 
-        success, path, msg = run_gltfpack_wasm(input_path)
+        success, _, msg = run_gltfpack_wasm(input_path)
 
         assert success is False
         assert "failed" in msg.lower()
@@ -269,7 +269,7 @@ class TestRunGltfpackWasm:
         mock_instance.pack.side_effect = OSError("Disk full")
         mock_get_gltfpack.return_value = mock_instance
 
-        success, path, msg = run_gltfpack_wasm(input_path)
+        success, _, msg = run_gltfpack_wasm(input_path)
 
         assert success is False
         assert "I/O error" in msg
@@ -291,7 +291,7 @@ class TestRunGltfpackWasm:
         mock_instance.pack.return_value = (True, b"packed_data", "Success")
         mock_get_gltfpack.return_value = mock_instance
 
-        success, path, msg = run_gltfpack_wasm(input_path, output_path)
+        success, _, _ = run_gltfpack_wasm(input_path, output_path)
 
         assert success is True
         assert output_path.exists()
