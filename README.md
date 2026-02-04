@@ -64,7 +64,25 @@ See [CLI.md]
 - Blender 5.0+
 - Python 3.11 (same as bundled with Blender)
 - uv (optional, for easy install/upgrade)
-- gltfpack (optional, for extra compression)
+- gltfpack (optional, for extra compression - WASM fallback included)
+
+## Development Setup
+
+For local development, download the gltfpack WASM binary:
+
+```bash
+# Download latest WASM from npm
+uv run scripts/update_wasm.py
+
+# Or check current version
+uv run scripts/update_wasm.py --show-version
+
+# Download specific version
+uv run scripts/update_wasm.py --version 1.0.0
+```
+
+The WASM binary (`src/notso_glb/wasm/gltfpack.wasm`) is not committed to git and
+must be downloaded locally. CI/CD pipelines handle this automatically.
 
 ## Useful Links
 

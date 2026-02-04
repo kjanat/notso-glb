@@ -11,6 +11,7 @@ __all__ = [
     "get_gltfpack",
     "get_wasm_path",
     "is_available",
+    "reset_gltfpack",
     "run_gltfpack_wasm",
 ]
 
@@ -40,6 +41,12 @@ def get_gltfpack() -> GltfpackWasm:
     if _gltfpack is None:
         _gltfpack = GltfpackWasm()
     return _gltfpack
+
+
+def reset_gltfpack() -> None:
+    """Reset singleton instance (for testing/cleanup)."""
+    global _gltfpack
+    _gltfpack = None
 
 
 def _resolve_wasm_output_path(input_path: Path, output_path: str | Path | None) -> Path:
@@ -125,7 +132,15 @@ def run_gltfpack_wasm(
     input_path = Path(input_path)
 
     if not is_available():
-        return False, input_path, "WASM runtime not available"
+        wasm_path = get_wasm_path()
+        if not wasm_path.exists():
+            return (
+                False,
+                input_path,
+                f"WASM file not found at {wasm_path}. "
+                "Run: uv run scripts/update_wasm.py",
+            )
+        return False, input_path, "WASM runtime not available (wasmtime not installed)"
 
     if not input_path.is_file():
         return False, input_path, f"Input file not found: {input_path}"
@@ -134,7 +149,9 @@ def run_gltfpack_wasm(
 
     if texture_compress:
         # WASM build lacks BasisU support, skip -tc with warning
-        print("[WARN] WASM gltfpack lacks BasisU support, skipping texture compression")
+        from notso_glb.utils.logging import log_warn
+
+        log_warn("WASM gltfpack lacks BasisU support, skipping texture compression")
 
     # texture_quality only applies with -tc, which WASM doesn't support
     del texture_quality
