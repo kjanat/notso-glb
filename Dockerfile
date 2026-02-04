@@ -11,23 +11,22 @@
 FROM python:3.11-slim AS builder
 
 # gltfpack version to install
-ARG GLTFPACK_VERSION=0.21
+ARG GLTFPACK_VERSION=1.0
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Download gltfpack binary from meshoptimizer releases
-RUN curl -sL "https://github.com/zeux/meshoptimizer/releases/download/v${GLTFPACK_VERSION}/gltfpack-${GLTFPACK_VERSION}-linux.zip" \
+RUN curl -sL "https://github.com/zeux/meshoptimizer/releases/download/v${GLTFPACK_VERSION}/gltfpack-ubuntu.zip" \
     -o /tmp/gltfpack.zip \
-    && apt-get update && apt-get install -y --no-install-recommends unzip \
     && unzip /tmp/gltfpack.zip -d /tmp \
     && mv /tmp/gltfpack /usr/local/bin/gltfpack \
     && chmod +x /usr/local/bin/gltfpack \
-    && rm /tmp/gltfpack.zip \
-    && rm -rf /var/lib/apt/lists/*
+    && rm /tmp/gltfpack.zip
 
 # Install uv for fast dependency management
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
