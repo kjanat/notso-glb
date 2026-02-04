@@ -17,7 +17,8 @@ jobs:
       - name: install shfmt
         run: sudo apt-get install -y shfmt >/dev/null 2>&1
 
-      - run: uvx ruff check --fix-only
+      - run: uvx ruff check --fix-only # ruff autofix
+      - run: dprint config update
       - run: dprint fmt --allow-no-files --diff --excludes ".github"
       - run: just docs
 
