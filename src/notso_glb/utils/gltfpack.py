@@ -70,9 +70,9 @@ def _select_backend(
         if _wasm_available():
             return True, None
         if gltfpack:
-            print(
-                "[WARN] prefer_wasm=True but WASM unavailable, falling back to native"
-            )
+            from notso_glb.utils.logging import log_warn
+
+            log_warn("prefer_wasm=True but WASM unavailable, falling back to native")
             return False, None
         return None, (
             False,

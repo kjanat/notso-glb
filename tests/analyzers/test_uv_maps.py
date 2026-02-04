@@ -29,7 +29,7 @@ class TestAnalyzeUnusedUvMaps:
 
         assert analyze_unused_uv_maps() == []
 
-    def test_detects_unused_secondary_uv(self, _mesh_with_uv_layers: Object) -> None:
+    def test_detects_unused_secondary_uv(self, mesh_with_uv_layers: Object) -> None:
         """Secondary UV maps not referenced by materials should be detected."""
         from notso_glb.analyzers import analyze_unused_uv_maps
 
