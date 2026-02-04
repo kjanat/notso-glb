@@ -10,9 +10,23 @@
 # =============================================================================
 FROM python:3.11-slim AS builder
 
+# gltfpack version to install
+ARG GLTFPACK_VERSION=0.21
+
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download gltfpack binary from meshoptimizer releases
+RUN curl -sL "https://github.com/zeux/meshoptimizer/releases/download/v${GLTFPACK_VERSION}/gltfpack-${GLTFPACK_VERSION}-linux.zip" \
+    -o /tmp/gltfpack.zip \
+    && apt-get update && apt-get install -y --no-install-recommends unzip \
+    && unzip /tmp/gltfpack.zip -d /tmp \
+    && mv /tmp/gltfpack /usr/local/bin/gltfpack \
+    && chmod +x /usr/local/bin/gltfpack \
+    && rm /tmp/gltfpack.zip \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv for fast dependency management
@@ -74,6 +88,9 @@ WORKDIR /app
 
 # Copy uv binary from builder
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Copy gltfpack binary from builder
+COPY --from=builder /usr/local/bin/gltfpack /usr/local/bin/gltfpack
 
 # Copy virtual environment and source from builder
 COPY --from=builder /app/.venv /app/.venv
