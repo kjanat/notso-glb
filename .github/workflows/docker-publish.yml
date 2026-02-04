@@ -2,8 +2,13 @@
 ---
 name: Publish Docker image
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+  # inputs:
+  #   version: { default: latest, description: "Specific version to publish, e.g. 1.0.0 (default: latest)", required: false, type: string }
   workflow_run: { workflows: [Publish to PyPI], types: [completed] }
+# env:
+#   version: ${{ github.event.inputs.version || 'latest' }}
+defaults: { run: { shell: bash } }
 jobs:
   push_to_registry:
     name: Push Docker image to Docker Hub
@@ -14,6 +19,29 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Download version from PyPI workflow
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v7
+        with:
+          name: version
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Determine package version
+        id: pkg
+        run: |
+          if [[ -f version.txt ]]; then
+            VERSION=$(cat version.txt)
+            echo "spec=notso-glb==${VERSION}" | tee -a "${GITHUB_OUTPUT}"
+            echo "Installing notso-glb==${VERSION}"
+          else
+            echo "spec=notso-glb" | tee -a "${GITHUB_OUTPUT}"
+            echo "Installing latest notso-glb"
+            echo "::warning::version.txt not found, defaulting to latest notso-glb"
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -40,6 +68,8 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
+          build-args: |
+            NOTSO_GLB_VERSION=${{ steps.pkg.outputs.spec }}
           # Single arch only, gltfpack binary is not available for arm64,
           # and configuring conditional inclusion of the binary I aint got no time for.
           platforms: linux/amd64

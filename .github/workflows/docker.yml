@@ -34,8 +34,7 @@ env:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    permissions: { contents: read }
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -53,23 +52,25 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Test CLI help
-        run: docker run --rm ${{ env.TEST_TAG }} --help
+        env: { TEST_TAG: "${{ env.TEST_TAG }}" }
+        run: docker run --rm "${TEST_TAG}" --help
 
       - name: Test version output
-        run: docker run --rm ${{ env.TEST_TAG }} --version
+        env: { TEST_TAG: "${{ env.TEST_TAG }}" }
+        run: docker run --rm "${TEST_TAG}" --version
 
       - name: Test module import
         run: |
           docker run --rm --entrypoint python ${{ env.TEST_TAG }} -c "
-          import notso_glb
-          print(f'notso-glb version: {notso_glb.__version__}')
-          from notso_glb.wasm.runner import run_gltfpack_wasm
-          print('WASM runner imported successfully')
+            import notso_glb
+            print(f'notso-glb version: {notso_glb.__version__}')
+            from notso_glb.wasm.runner import run_gltfpack_wasm
+            print('WASM runner imported successfully')
           "
 
       - name: Test gltfpack binary
-        run: |
-          docker run --rm --entrypoint gltfpack ${{ env.TEST_TAG }} -h | head -5
+        env: { TEST_TAG: "${{ env.TEST_TAG }}" }
+        run: docker run --rm --entrypoint gltfpack "${TEST_TAG}" -h | head -5
 
       - name: Download test model
         run: |
@@ -78,11 +79,12 @@ jobs:
             "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/BoxAnimated/glTF-Binary/BoxAnimated.glb"
 
       - name: Test GLB processing
+        env: { TEST_TAG: "${{ env.TEST_TAG }}" }
         run: |
           docker run --rm \
-            --user $(id -u):$(id -g) \
-            -v ${{ github.workspace }}/test-models:/data \
-            ${{ env.TEST_TAG }} \
+            --user "$(id -u):$(id -g)" \
+            -v "${GITHUB_WORKSPACE}/test-models:/data" \
+            "${TEST_TAG}" \
             /data/BoxAnimated.glb -o /data/BoxAnimated-optimized.glb --no-gltfpack
 
       - name: Verify output file
@@ -92,11 +94,12 @@ jobs:
           echo "Output file size: $(stat -c%s test-models/BoxAnimated-optimized.glb) bytes"
 
       - name: Test with native gltfpack
+        env: { TEST_TAG: "${{ env.TEST_TAG }}" }
         run: |
           docker run --rm \
-            --user $(id -u):$(id -g) \
-            -v ${{ github.workspace }}/test-models:/data \
-            ${{ env.TEST_TAG }} \
+            --user "$(id -u):$(id -g)" \
+            -v "${GITHUB_WORKSPACE}/test-models:/data" \
+            "${TEST_TAG}" \
             /data/BoxAnimated.glb -o /data/BoxAnimated-gltfpack.glb --gltfpack --no-draco
 
       - name: Compare output sizes
@@ -104,16 +107,17 @@ jobs:
           ORIGINAL=$(stat -c%s test-models/BoxAnimated.glb)
           OPTIMIZED=$(stat -c%s test-models/BoxAnimated-optimized.glb)
           GLTFPACK=$(stat -c%s test-models/BoxAnimated-gltfpack.glb)
-          echo "| File | Size (bytes) |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| ---- | ------------ |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Original | ${ORIGINAL} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Optimized (no gltfpack) | ${OPTIMIZED} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Optimized (with gltfpack) | ${GLTFPACK} |" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "| File                      | Size (bytes) |"
+            echo "| ------------------------- | ------------ |"
+            echo "| Original                  | ${ORIGINAL}  |"
+            echo "| Optimized (no gltfpack)   | ${OPTIMIZED} |"
+            echo "| Optimized (with gltfpack) | ${GLTFPACK}  |"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Report image size
+        env: { TEST_TAG: "${{ env.TEST_TAG }}" }
         run: |
-          SIZE=$(docker image inspect ${{ env.TEST_TAG }} --format='{{.Size}}')
+          SIZE=$(docker image inspect "${TEST_TAG}" --format='{{.Size}}')
           SIZE_MB=$((SIZE / 1024 / 1024))
-          echo "### Docker Image Stats" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Image size**: ${SIZE_MB} MB" >> "$GITHUB_STEP_SUMMARY"
+          echo -e "### Docker Image Stats\n\n- **Image size**: ${SIZE_MB} MB" | tee -a "$GITHUB_STEP_SUMMARY"
