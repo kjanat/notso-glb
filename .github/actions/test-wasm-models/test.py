@@ -15,7 +15,7 @@ MODEL_DIR = Path(
     os.environ.get("MODEL_DIR", "test-models/three.js/examples/models/gltf")
 )
 VERSION_PATH = (
-    Path(__file__).parent.parent.parent.parent
+    Path(__file__).resolve().parent.parent.parent.parent
     / "src"
     / "notso_glb"
     / "wasm"
@@ -58,6 +58,57 @@ def classify_failure(msg: str) -> tuple[bool, str]:
         if pattern in msg:
             return True, category
     return False, ""
+
+
+def _print_summary(
+    passed: int,
+    expected_by_category: dict[str, list[str]],
+    unexpected_failed: list[tuple[str, str]],
+) -> None:
+    """Print test results summary."""
+    total_expected = sum(len(v) for v in expected_by_category.values())
+
+    print()
+    print(
+        f"Results: {passed} passed, "
+        f"{total_expected} expected failures, "
+        f"{len(unexpected_failed)} unexpected failures"
+    )
+
+    if expected_by_category:
+        print()
+        print("Expected failures by category:")
+        for category, models_list in sorted(expected_by_category.items()):
+            desc = CATEGORY_DESCRIPTIONS.get(category, category)
+            print(f"  [{category}] ({len(models_list)}): {desc}")
+            for model_name in models_list:
+                print(f"    - {model_name}")
+
+    if unexpected_failed:
+        print()
+        print("UNEXPECTED FAILURES (investigate these):")
+        for model_name, error_msg in unexpected_failed:
+            print(f"  - {model_name}: {error_msg}")
+
+
+def _write_github_output(
+    passed: int,
+    expected_by_category: dict[str, list[str]],
+    unexpected_failed: list[tuple[str, str]],
+) -> None:
+    """Write results to GITHUB_OUTPUT if available."""
+    github_output = os.environ.get("GITHUB_OUTPUT")
+    if not github_output:
+        return
+
+    total_expected = sum(len(v) for v in expected_by_category.values())
+    with open(github_output, "a") as f:
+        f.write(f"passed={passed}\n")
+        f.write(f"expected-failed={total_expected}\n")
+        f.write(f"unexpected-failed={len(unexpected_failed)}\n")
+        for category in CATEGORY_DESCRIPTIONS:
+            count = len(expected_by_category.get(category, []))
+            f.write(f"expected-{category}={count}\n")
 
 
 def main() -> int:
@@ -121,44 +172,9 @@ def main() -> int:
                 print(f"  ERROR {rel_path}: {e}")
                 unexpected_failed.append((str(rel_path), str(e)[:120]))
 
-    total_expected = sum(len(v) for v in expected_by_category.values())
+    _print_summary(passed, expected_by_category, unexpected_failed)
+    _write_github_output(passed, expected_by_category, unexpected_failed)
 
-    # Summary
-    print()
-    print(
-        f"Results: {passed} passed, "
-        f"{total_expected} expected failures, "
-        f"{len(unexpected_failed)} unexpected failures"
-    )
-
-    if expected_by_category:
-        print()
-        print("Expected failures by category:")
-        for category, models_list in sorted(expected_by_category.items()):
-            desc = CATEGORY_DESCRIPTIONS.get(category, category)
-            print(f"  [{category}] ({len(models_list)}): {desc}")
-            for model_name in models_list:
-                print(f"    - {model_name}")
-
-    if unexpected_failed:
-        print()
-        print("UNEXPECTED FAILURES (investigate these):")
-        for model_name, error_msg in unexpected_failed:
-            print(f"  - {model_name}: {error_msg}")
-
-    # Write to GITHUB_OUTPUT if available
-    github_output = os.environ.get("GITHUB_OUTPUT")
-    if github_output:
-        with open(github_output, "a") as f:
-            f.write(f"passed={passed}\n")
-            f.write(f"expected-failed={total_expected}\n")
-            f.write(f"unexpected-failed={len(unexpected_failed)}\n")
-            # Per-category counts
-            for category in CATEGORY_DESCRIPTIONS:
-                count = len(expected_by_category.get(category, []))
-                f.write(f"expected-{category}={count}\n")
-
-    # Fail only on unexpected failures
     if unexpected_failed:
         print()
         print(f"FAILED: {len(unexpected_failed)} unexpected failure(s)")

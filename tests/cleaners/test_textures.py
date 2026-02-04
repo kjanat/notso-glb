@@ -40,9 +40,9 @@ class TestResizeTextures:
 
         resized = resize_textures(max_size=2048, force_pot=True)
         assert resized == 1
-        # Should round to nearest power of two
-        assert img.size[0] in [512, 1024, 2048]
-        assert img.size[1] in [512, 1024, 2048]
+        # 1500 rounds to nearest power of two: 1024
+        assert img.size[0] == 1024
+        assert img.size[1] == 1024
 
         bpy.data.images.remove(img)
 

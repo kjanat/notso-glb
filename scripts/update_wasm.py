@@ -18,8 +18,10 @@ import io
 import json
 import sys
 import tarfile
+import urllib.error
 import urllib.request
 from pathlib import Path
+from typing import Any
 
 NPM_REGISTRY_URL = "https://registry.npmjs.org/gltfpack"
 WASM_FILENAME = "library.wasm"
@@ -148,7 +150,13 @@ def main() -> int:
         updated, msg = update_bundle(target_version)
         print(f"[INFO] {msg}")
         return 0 if updated or "Already" in msg else 1
-    except Exception as e:
+    except (
+        OSError,
+        ValueError,
+        tarfile.TarError,
+        json.JSONDecodeError,
+        urllib.error.URLError,
+    ) as e:
         print(f"[ERROR] {e}", file=sys.stderr)
         return 1
 

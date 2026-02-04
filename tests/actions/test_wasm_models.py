@@ -9,18 +9,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 
-@pytest.fixture
-def mock_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """Mock environment variables."""
-    model_dir = tmp_path / "models"
-    model_dir.mkdir()
-
-    monkeypatch.setenv("MODEL_DIR", str(model_dir))
-    monkeypatch.setenv("MAX_MODELS", "5")
-
-    return model_dir
-
-
 class TestGetBundledVersion:
     """Tests for get_bundled_version function."""
 
