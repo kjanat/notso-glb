@@ -48,7 +48,7 @@ fmt-check *args:
 typecheck *args:
     @uv run ty check {{ args }}
 
-# Run all checks (lint, format check, typecheck, test)
+# Run all checks (`lint`, `fmt-check`, `typecheck`, `test`)
 [group('dev')]
 check: lint typecheck test fmt-check
 
@@ -66,25 +66,25 @@ docker-build *args:
 docker-build-dev *args:
     docker build -f Dockerfile.dev -t notso-glb:dev {{ args }} .
 
-# Test dev image with a GLB file
+# Test prod image with a GLB file, e.g. `just docker-test model.glb --some-arg`
 [group('docker')]
-docker-test-dev file:
-    docker run --rm -v "$(pwd)":/data notso-glb:dev {{ file }}
+docker-test file *args:
+    docker run --rm -v "$(pwd)":/data notso-glb:latest "{{ file }}" {{ args }}
 
-# Test prod image with a GLB file
+# Test dev image with a GLB file, e.g. `just docker-test-dev model.glb --some-arg`
 [group('docker')]
-docker-test file:
-    docker run --rm -v "$(pwd)":/data notso-glb:latest {{ file }}
-
-# Run dev image interactively
-[group('docker')]
-docker-shell-dev:
-    docker run --rm -it --entrypoint bash -v "$(pwd)":/data notso-glb:dev
+docker-test-dev file *args:
+    docker run --rm -v "$(pwd)":/data notso-glb:dev "{{ file }}" {{ args }}
 
 # Run prod image interactively
 [group('docker')]
 docker-shell:
     docker run --rm -it --entrypoint bash -v "$(pwd)":/data notso-glb:latest
+
+# Run dev image interactively
+[group('docker')]
+docker-shell-dev:
+    docker run --rm -it --entrypoint bash -v "$(pwd)":/data notso-glb:dev
 
 # Show Docker image sizes
 [group('docker')]
@@ -95,7 +95,7 @@ docker-sizes:
 # CLI
 # ==============================================================================
 
-# Run CLI directly (requires uv sync first)
+# Run CLI directly (requires `uv sync` first)
 [group('cli')]
 notso-glb *args:
     uv run -q notso-glb {{ args }}
