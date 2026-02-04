@@ -2,8 +2,8 @@
 # Multi-stage build for minimal image size and fast cold starts
 #
 # Usage:
-#   docker build -t notso-glb .
-#   docker run -v /path/to/models:/data notso-glb /data/input.glb -o /data/output.glb
+# docker build -t notso-glb .
+# docker run -v /path/to/models:/data notso-glb /data/input.glb -o /data/output.glb
 
 # =============================================================================
 # Stage 1: Builder - Install dependencies and download WASM
