@@ -16,7 +16,7 @@ uvx notso-glb [OPTIONS] FILE
   <a href="https://pypi.org/project/notso-glb/"><img src="https://img.shields.io/pypi/v/notso-glb" alt="PyPI"></a>
   <a href="https://pypi.org/project/notso-glb/"><img src="https://img.shields.io/pypi/dm/notso-glb" alt="Downloads"></a>  <!--<a href="https://github.com/kjanat/notso-glb/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/kjanat/notso-glb/ci.yml?branch=master" alt="CI"></a>-->
   <a href="https://github.com/kjanat/notso-glb/blob/master/LICENSE"><img src="https://img.shields.io/github/license/kjanat/notso-glb" alt="License"></a>  <!--<a href="https://notso-glb.kjanat.com"><img src="https://img.shields.io/badge/docs-mkdocs-blue" alt="Docs"></a>-->
-  <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python 3.11">
+  <img src="https://img.shields.io/badge/python-3.11-blue" alt="Python 3.11">
 </p>
 
 ## Install
