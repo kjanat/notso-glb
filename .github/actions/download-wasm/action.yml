@@ -24,6 +24,7 @@ runs:
     - name: Check if uv is available
       id: check-uv
       shell: bash
+      env: { ACTION_PATH: "${{ github.action_path }}" }
       run: "${ACTION_PATH}/uv-available.sh | tee ${GITHUB_OUTPUT}"
     - name: Install uv
       if: steps.check-uv.outputs.uv-available == 'false'

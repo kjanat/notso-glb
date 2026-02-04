@@ -25,7 +25,7 @@
 # =============================================================================
 # Stage 1: Builder - Install notso-glb from PyPI
 # =============================================================================
-FROM ghcr.io/astral-sh/uv:0.9.28-python3.11-bookworm-slim AS builder
+FROM ghcr.io/astral-sh/uv:0.9.29-python3.11-bookworm-slim AS builder
 
 # gltfpack version to install
 ARG GLTFPACK_VERSION=1.0
