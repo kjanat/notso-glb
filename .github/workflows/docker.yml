@@ -63,7 +63,7 @@ jobs:
           docker run --rm --entrypoint python ${{ env.TEST_TAG }} -c "
           import notso_glb
           print(f'notso-glb version: {notso_glb.__version__}')
-          from notso_glb.wasm.runner import run_gltfpack
+          from notso_glb.wasm.runner import run_gltfpack_wasm
           print('WASM runner imported successfully')
           "
 
