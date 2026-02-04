@@ -14,8 +14,9 @@ uvx notso-glb [OPTIONS] FILE
 
 <p align="center">
   <a href="https://pypi.org/project/notso-glb/"><img src="https://img.shields.io/pypi/v/notso-glb" alt="PyPI"></a>
-  <a href="https://pypi.org/project/notso-glb/"><img src="https://img.shields.io/pypi/dm/notso-glb" alt="Downloads"></a>  <!--<a href="https://github.com/kjanat/notso-glb/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/kjanat/notso-glb/ci.yml?branch=master" alt="CI"></a>-->
-  <a href="https://github.com/kjanat/notso-glb/blob/master/LICENSE"><img src="https://img.shields.io/github/license/kjanat/notso-glb" alt="License"></a>  <!--<a href="https://notso-glb.kjanat.com"><img src="https://img.shields.io/badge/docs-mkdocs-blue" alt="Docs"></a>-->
+  <a href="https://pypi.org/project/notso-glb/"><img src="https://img.shields.io/pypi/dm/notso-glb" alt="Downloads"></a>
+  <a href="https://hub.docker.com/r/kjanat/notso-glb"><img src="https://img.shields.io/docker/v/kjanat/notso-glb?label=docker" alt="Docker"></a>
+  <a href="https://github.com/kjanat/notso-glb/blob/master/LICENSE"><img src="https://img.shields.io/github/license/kjanat/notso-glb" alt="License"></a>
   <img src="https://img.shields.io/badge/python-3.11-blue" alt="Python 3.11">
 </p>
 
@@ -36,6 +37,36 @@ then just run `notso-glb` from the command line.
 
 ```bash
 uv tool upgrade notso-glb
+```
+
+## Docker
+
+Available from [Docker Hub] and [GitHub Container Registry]:
+
+```bash
+# Docker Hub
+docker pull kjanat/notso-glb
+
+# GitHub Container Registry
+docker pull ghcr.io/kjanat/notso-glb
+```
+
+### Usage (docker)
+
+Mount your files directory to `/data`:
+
+```bash
+# Process a file (output to input_optimized.glb by default)
+docker run --rm -v "$(pwd)":/data kjanat/notso-glb model.blend
+
+# Specify output file
+docker run --rm -v "$(pwd)":/data kjanat/notso-glb input.glb -o output.glb
+
+# With options
+docker run --rm -v "$(pwd)":/data kjanat/notso-glb model.blend --no-draco --no-webp
+
+# Show help
+docker run --rm kjanat/notso-glb --help
 ```
 
 ## Features
@@ -119,6 +150,8 @@ licensed.
 [Blender 5.0 Python API Documentation]: https://docs.blender.org/api/current/index.html
 [Blender]: https://www.blender.org/
 [CLI.md]: https://github.com/kjanat/notso-glb/blob/master/CLI.md
+[Docker Hub]: https://hub.docker.com/r/kjanat/notso-glb
+[GitHub Container Registry]: https://github.com/users/kjanat/packages/container/package/notso-glb
 [LICENSE]: https://github.com/kjanat/notso-glb/blob/master/LICENSE
 
 <!-- markdownlint-disable-file MD033 -->
