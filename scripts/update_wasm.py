@@ -38,7 +38,15 @@ def get_npm_info() -> dict[str, Any]:
 
 
 def get_version_info(version: str | None = None) -> tuple[str, str]:
-    """Fetch tarball URL and version from npm."""
+    """
+    Fetch tarball URL and version from npm.
+
+    Args:
+        version: Specific version to resolve, or None for latest.
+
+    Returns:
+        Tuple of (tarball_url, resolved_version).
+    """
     data = get_npm_info()
 
     resolved_version: str = (
@@ -56,7 +64,15 @@ def get_version_info(version: str | None = None) -> tuple[str, str]:
 
 
 def download_wasm(tarball_url: str) -> bytes:
-    """Download and extract WASM from npm tarball."""
+    """
+    Download and extract WASM from npm tarball.
+
+    Args:
+        tarball_url: URL of the npm tarball to download.
+
+    Returns:
+        Raw WASM bytes.
+    """
     with urllib.request.urlopen(tarball_url, timeout=60) as resp:
         tarball_data = resp.read()
 
@@ -103,6 +119,7 @@ def update_bundle(target_version: str | None = None) -> tuple[bool, str]:
         raise ValueError("Downloaded file is not valid WASM")
 
     # Update bundle
+    BUNDLE_PATH.parent.mkdir(parents=True, exist_ok=True)
     BUNDLE_PATH.write_bytes(wasm_data)
     VERSION_PATH.write_text(f"{version}\n")
 

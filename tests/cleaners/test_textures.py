@@ -182,8 +182,8 @@ class TestResizeTextures:
                 img, "scale", side_effect=RuntimeError("Mock scale failure")
             ):
                 resized = resize_textures(max_size=1024)
-                assert isinstance(resized, int)
-                assert resized >= 0  # Should handle exception gracefully
+                # Only image failed to resize, so count should be 0
+                assert resized == 0
         finally:
             bpy.data.images.remove(img)
 

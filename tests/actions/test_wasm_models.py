@@ -3,10 +3,22 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+
+@pytest.fixture(autouse=True)
+def add_action_module_path() -> Generator[None, None, None]:
+    """Add the test-wasm-models action directory to sys.path for all tests."""
+    action_path = str(
+        Path(__file__).parent.parent.parent / ".github" / "actions" / "test-wasm-models"
+    )
+    sys.path.insert(0, action_path)
+    yield
+    sys.path.remove(action_path)
 
 
 class TestGetBundledVersion:
@@ -14,17 +26,6 @@ class TestGetBundledVersion:
 
     def test_returns_version_from_file(self, tmp_path: Path) -> None:
         """Should return version from file."""
-        # Import the test module
-        sys.path.insert(
-            0,
-            str(
-                Path(__file__).parent.parent.parent
-                / ".github"
-                / "actions"
-                / "test-wasm-models"
-            ),
-        )
-
         try:
             from test import get_bundled_version  # type: ignore[import-not-found]
         except ImportError:
@@ -151,7 +152,7 @@ class TestMain:
         mock_wasm_path: MagicMock,
         mock_is_avail: MagicMock,
         tmp_path: Path,
-        capsys,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         """Should display WASM version and path info."""
         try:
