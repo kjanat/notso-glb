@@ -15,9 +15,7 @@ class TestHasDracoCompression:
         from notso_glb.utils.draco import has_draco_compression
 
         glb_path = tmp_path / "draco.glb"
-        _create_glb_file(
-            glb_path, {"extensionsUsed": ["KHR_draco_mesh_compression"]}
-        )
+        _create_glb_file(glb_path, {"extensionsUsed": ["KHR_draco_mesh_compression"]})
 
         result = has_draco_compression(glb_path)
 
@@ -166,9 +164,7 @@ class TestHasDracoCompression:
         from notso_glb.utils.draco import has_draco_compression
 
         glb_path = tmp_path / "test.glb"
-        _create_glb_file(
-            glb_path, {"extensionsUsed": ["KHR_draco_mesh_compression"]}
-        )
+        _create_glb_file(glb_path, {"extensionsUsed": ["KHR_draco_mesh_compression"]})
 
         result = has_draco_compression(glb_path)
 
@@ -179,9 +175,7 @@ class TestHasDracoCompression:
         from notso_glb.utils.draco import has_draco_compression
 
         glb_path = tmp_path / "test.glb"
-        _create_glb_file(
-            glb_path, {"extensionsUsed": ["KHR_draco_mesh_compression"]}
-        )
+        _create_glb_file(glb_path, {"extensionsUsed": ["KHR_draco_mesh_compression"]})
 
         result = has_draco_compression(str(glb_path))
 
@@ -275,9 +269,7 @@ class TestJsonHasDraco:
         assert result is False
 
 
-def _create_glb_file(
-    path: Path, gltf_json: dict, add_padding: bool = False
-) -> None:
+def _create_glb_file(path: Path, gltf_json: dict, add_padding: bool = False) -> None:
     """Helper to create a minimal GLB file for testing."""
     # Encode JSON
     json_str = json.dumps(gltf_json)

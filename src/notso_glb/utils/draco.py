@@ -85,7 +85,7 @@ def _check_glb_for_draco(file_path: Path) -> bool:
 
 def _check_gltf_for_draco(file_path: Path) -> bool:
     """Check a glTF JSON file for Draco compression."""
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(file_path, encoding="utf-8") as f:
         gltf_json = json.load(f)
 
     return _json_has_draco(gltf_json)
