@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Download gltfpack binary from meshoptimizer releases
-RUN curl -sL "https://github.com/zeux/meshoptimizer/releases/download/v${GLTFPACK_VERSION}/gltfpack-ubuntu.zip" \
+RUN curl -fsSL "https://github.com/zeux/meshoptimizer/releases/download/v${GLTFPACK_VERSION}/gltfpack-ubuntu.zip" \
     -o /tmp/gltfpack.zip \
     && unzip /tmp/gltfpack.zip -d /tmp \
     && mv /tmp/gltfpack /usr/local/bin/gltfpack \

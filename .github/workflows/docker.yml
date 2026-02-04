@@ -74,7 +74,7 @@ jobs:
       - name: Download test model
         run: |
           mkdir -p test-models
-          curl -sL -o test-models/BoxAnimated.glb \
+          curl -fsSL -o test-models/BoxAnimated.glb \
             "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/BoxAnimated/glTF-Binary/BoxAnimated.glb"
 
       - name: Test GLB processing
