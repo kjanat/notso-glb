@@ -19,6 +19,10 @@
         "exts": ["toml"],
       },
       { "command": "shfmt -i 0 -ln bash -bn -kp -ci --filename {{file_path}}", "exts": ["sh", "bash"] },
+      {
+        "command": "just --dump",
+        "fileNames": ["justfile"],
+      },
     ],
   },
   "excludes": ["**/node_modules", "**/*-lock.json", "**/.venv"],
