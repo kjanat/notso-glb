@@ -14,14 +14,23 @@ outputs:
   after:
     description: WASM version after download
     value: ${{ steps.download.outputs.after }}
+  uv-available:
+    description: Whether uv was already available
+    value: ${{ steps.check-uv.outputs.uv-available }}
 
 runs:
   using: composite
   steps:
+    - name: Check if uv is available
+      id: check-uv
+      shell: bash
+      env: { ACTION_PATH: "${{ github.action_path }}" }
+      run: "${ACTION_PATH}/uv-available.sh | tee ${GITHUB_OUTPUT}"
+    - name: Install uv
+      if: steps.check-uv.outputs.uv-available == 'false'
+      uses: astral-sh/setup-uv@v7
     - name: Download latest WASM from npm
       id: download
       shell: bash
-      env:
-        WASM_VERSION: "${{ inputs.version }}"
-        ACTION_PATH: "${{ github.action_path }}"
+      env: { WASM_VERSION: "${{ inputs.version }}", ACTION_PATH: "${{ github.action_path }}" }
       run: "${ACTION_PATH}/download.sh"

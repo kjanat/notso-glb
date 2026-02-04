@@ -42,7 +42,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     permissions: { contents: read }
-    outputs: { version: "${{ steps.build.outputs.version }}" }
+    outputs: { version: "${{ steps.version.outputs.version }}" }
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -60,14 +60,22 @@ jobs:
           cat src/notso_glb/wasm/gltfpack.version
 
       - name: Build package
-        id: build
-        run: |
-          uv build --no-sources
-          echo "version=$(uv version --short --color never)" >> "$GITHUB_OUTPUT"
+        run: uv build --no-sources
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v6
         with: { name: dist, path: dist/ }
+
+      - name: Report version
+        id: version
+        run: |
+          VERSION=$(uv version --short --color never)
+          echo "version=${VERSION}" | tee -a "$GITHUB_OUTPUT"
+          echo "${VERSION}" > version.txt
+
+      - name: Upload version artifact
+        uses: actions/upload-artifact@v6
+        with: { name: version, path: version.txt }
 
   publish:
     needs: build

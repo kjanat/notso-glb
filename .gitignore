@@ -15,6 +15,10 @@ wheels/
 *.bin
 .cache
 
+# Secrets
+.env
+.env.*
+
 # WASM binary (downloaded from npm during CI/publish)
 src/notso_glb/wasm/gltfpack.wasm
 

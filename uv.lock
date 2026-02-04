@@ -125,11 +125,11 @@ wheels = [
 
 [[package]]
 name = "fake-bpy-module"
-version = "20260203"
+version = "20260204"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6f/9f/31a9c116e93b54050fc131db77fbbc02191630dd20bed75ad5e24f85ba10/fake_bpy_module-20260203.tar.gz", hash = "sha256:e690247e1080fc7183aa8a1c5cff7f558064b90c8d6b64405abbf3eb047891ed", size = 909976, upload-time = "2026-02-03T06:40:01.055Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9d/88/3aa5a4656c8a017c00463e5798813270034eb49eab37443f056513b400fe/fake_bpy_module-20260204.tar.gz", hash = "sha256:ae0a03dfc16db34248a1c1c5f0ae2fd54e7d67933b4167c39a9e538783ee4cae", size = 910807, upload-time = "2026-02-04T06:40:18.146Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/81/d7/e2fe481be401a2bb7781541f3cce2372368c75fa23654a90cab1d2aef943/fake_bpy_module-20260203-py3-none-any.whl", hash = "sha256:c79be069f4e75e8f3f19e3e4bdff54288b9e92349f1bc42932f51afde37d55c1", size = 1041254, upload-time = "2026-02-03T06:39:59.193Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/2e/24c85c9936c331da79594762276eae64b49bf9ae13a246f1532f5c7d3d1b/fake_bpy_module-20260204-py3-none-any.whl", hash = "sha256:c94f7c9d37f7eb49f61bca4ae95fa4a389b39caa8a3c080516b44a48044b4734", size = 1041820, upload-time = "2026-02-04T06:40:16.563Z" },
 ]
 
 [[package]]
