@@ -55,11 +55,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
     libgomp1 \
-    libxi6 \
-    libxrender1 \
-    libxkbcommon0 \
-    libsm6 \
     libice6 \
+    libsm6 \
+    libxfixes3 \
+    libxi6 \
+    libxkbcommon0 \
+    libxrender1 \
+    libxxf86vm1 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
