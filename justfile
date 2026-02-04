@@ -131,6 +131,11 @@ clean:
     rm -rf dist/ build/ *.egg-info/ .pytest_cache/ .ruff_cache/ .coverage
     find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 
+# Regenerate CLI.md
+[group('maintenance')]
+docs:
+    @uv run scripts/generate_docs.py
+
 # Download latest WASM from npm
 [group('maintenance')]
 [working-directory('./.github/actions/download-wasm')]
