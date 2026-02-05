@@ -8,6 +8,7 @@ No external dependencies beyond the Python standard library.
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -21,6 +22,12 @@ PORT = int(os.environ.get("PORT", "8080"))
 MAX_UPLOAD_SIZE = int(
     os.environ.get("MAX_UPLOAD_SIZE", str(100 * 1024 * 1024))
 )  # 100 MB
+
+_TRUTHY = frozenset({"true", "1", "yes", "on"})
+_FALSY = frozenset({"false", "0", "no", "off"})
+_ALLOWED_BOOL_VALUES = _TRUTHY | _FALSY
+_ALLOWED_FORMATS = frozenset({"glb", "gltf", "gltf-embedded"})
+_PRINTABLE_ASCII_RE = re.compile(r"[^\x20-\x7E]")
 
 
 def parse_multipart(content_type: str, body: bytes) -> dict[str, bytes | str]:
@@ -110,7 +117,7 @@ VALUE_OPTIONS: dict[str, str] = {
 
 
 def build_cli_args(params: dict[str, str]) -> list[str]:
-    """Convert request parameters to notso-glb CLI arguments.
+    """Convert request parameters to validated notso-glb CLI arguments.
 
     Args:
         params: Mapping of parameter names to their string values
@@ -118,20 +125,49 @@ def build_cli_args(params: dict[str, str]) -> list[str]:
 
     Returns:
         A list of CLI flag strings ready to be passed to the notso-glb command.
+
+    Raises:
+        ValueError: If any parameter value fails validation (unknown boolean
+            value, non-integer texture size, unrecognised output format, etc.).
     """
     args: list[str] = []
 
     for key, (on_flag, off_flag) in BOOL_FLAGS.items():
         if key in params:
             val = params[key].lower()
-            if val in ("true", "1", "yes", "on"):
+            if val not in _ALLOWED_BOOL_VALUES:
+                raise ValueError(
+                    f"Invalid value for '{key}': '{params[key]}'. "
+                    f"Expected one of: {', '.join(sorted(_ALLOWED_BOOL_VALUES))}"
+                )
+            if val in _TRUTHY:
                 args.append(on_flag)
-            elif val in ("false", "0", "no", "off") and off_flag:
+            elif off_flag:
                 args.append(off_flag)
 
-    for key, flag in VALUE_OPTIONS.items():
-        if key in params:
-            args.extend([flag, params[key]])
+    if "format" in params:
+        fmt = params["format"]
+        if fmt not in _ALLOWED_FORMATS:
+            raise ValueError(
+                f"Invalid format: '{fmt}'. "
+                f"Expected one of: {', '.join(sorted(_ALLOWED_FORMATS))}"
+            )
+        args.extend(["--format", fmt])
+
+    if "max_texture_size" in params:
+        raw = params["max_texture_size"]
+        try:
+            size = int(raw)
+        except ValueError:
+            raise ValueError(
+                f"Invalid max_texture_size: '{raw}'. Expected an integer."
+            ) from None
+        if size < 0 or size > 16384:
+            raise ValueError(
+                f"max_texture_size out of range: {size}. "
+                "Expected 0-16384."
+            )
+        args.extend(["--max-texture-size", str(size)])
 
     return args
 
@@ -158,6 +194,7 @@ class OptimizeHandler(BaseHTTPRequestHandler):
         print(f"[server] {fmt % args}")
 
     def do_GET(self) -> None:
+        """Handle GET requests for health checks and service info."""
         path = self.path.split("?")[0]
 
         if path == "/health":
@@ -191,6 +228,7 @@ class OptimizeHandler(BaseHTTPRequestHandler):
         self._respond_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
 
     def do_POST(self) -> None:
+        """Handle POST requests for file optimization."""
         path = self.path.split("?")[0]
 
         if path != "/optimize":
@@ -278,7 +316,13 @@ class OptimizeHandler(BaseHTTPRequestHandler):
             safe_name = os.path.basename(filename)
             if not safe_name:
                 safe_name = "input.glb"
-            input_path = os.path.join(work_dir, safe_name)
+            input_path = os.path.normpath(os.path.join(work_dir, safe_name))
+            if not input_path.startswith(work_dir + os.sep):
+                self._respond_json(
+                    HTTPStatus.BAD_REQUEST,
+                    {"error": "Invalid filename (path traversal rejected)"},
+                )
+                return
 
             with open(input_path, "wb") as f:
                 f.write(file_data)
@@ -289,14 +333,23 @@ class OptimizeHandler(BaseHTTPRequestHandler):
             output_name = f"output_{uuid.uuid4().hex[:8]}{out_ext}"
             output_path = os.path.join(work_dir, output_name)
 
-            # Build CLI command
+            # Build and validate CLI arguments
+            try:
+                extra_args = build_cli_args(params)
+            except ValueError as e:
+                self._respond_json(
+                    HTTPStatus.BAD_REQUEST,
+                    {"error": f"Invalid parameter: {e}"},
+                )
+                return
+
             cmd = [
                 "notso-glb",
                 input_path,
                 "-o",
                 output_path,
                 "--quiet",
-                *build_cli_args(params),
+                *extra_args,
             ]
 
             self.log_message("Running: %s", " ".join(cmd))
@@ -311,7 +364,7 @@ class OptimizeHandler(BaseHTTPRequestHandler):
 
             if result.returncode != 0:
                 stderr = result.stderr or result.stdout or "Unknown error"
-                self.log_message("notso-glb failed: %s", stderr)
+                print(f"[ERROR] notso-glb failed: {stderr}")
                 self._respond_json(
                     HTTPStatus.INTERNAL_SERVER_ERROR,
                     {
@@ -344,21 +397,30 @@ class OptimizeHandler(BaseHTTPRequestHandler):
             )
             # Include stdout logs as a header for debugging
             if result.stdout:
-                # Truncate and encode logs for header safety
-                log_summary = result.stdout[:500].replace("\n", " | ")
-                self.send_header("X-Optimization-Log", log_summary)
+                # Sanitize to printable ASCII only (\x20-\x7E), then truncate
+                log_summary = _PRINTABLE_ASCII_RE.sub(" ", result.stdout)[:500].strip()
+                if log_summary:
+                    self.send_header("X-Optimization-Log", log_summary)
             self.end_headers()
             self.wfile.write(output_data)
 
         except subprocess.TimeoutExpired:
+            print("[ERROR] notso-glb timed out after 300s")
             self._respond_json(
                 HTTPStatus.GATEWAY_TIMEOUT,
                 {"error": "Optimization timed out (5 minute limit)"},
             )
-        except Exception as e:
+        except subprocess.SubprocessError as e:
+            print(f"[ERROR] Subprocess error: {e}")
             self._respond_json(
                 HTTPStatus.INTERNAL_SERVER_ERROR,
-                {"error": f"Internal error: {e}"},
+                {"error": f"Subprocess error: {e}"},
+            )
+        except OSError as e:
+            print(f"[ERROR] I/O error: {e}")
+            self._respond_json(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                {"error": f"I/O error: {e}"},
             )
         finally:
             shutil.rmtree(work_dir, ignore_errors=True)
