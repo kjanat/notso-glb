@@ -41,16 +41,14 @@ jobs:
           fi
       - name: Bump version
         id: bump
+        env: { BUMP_INPUT: "${{ inputs.bump }}", PRERELEASE: "${{ inputs.prerelease }}" }
         run: |
           OLD_VERSION=$(uv version --output-format json | jq -r .version)
           echo "old_version=${OLD_VERSION}" >> "$GITHUB_OUTPUT"
           echo "Previous version: ${OLD_VERSION}"
 
-          BUMP_INPUT="${{ inputs.bump }}"
-          PRERELEASE="${{ inputs.prerelease }}"
-
           # Determine if input is an exact version or a bump keyword
-          if [[ "${BUMP_INPUT}" =~ ^[0-9]+\.[0-9]+\.[0-9] ]]; then
+          if [[ "${BUMP_INPUT}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             NEW_VERSION=$(uv version "${BUMP_INPUT}" --output-format json | jq -r .version)
           elif [[ "${PRERELEASE}" != "stable" ]]; then
             NEW_VERSION=$(uv version --bump "${BUMP_INPUT}" --bump "${PRERELEASE}" --output-format json | jq -r .version)
@@ -101,7 +99,7 @@ jobs:
           echo "::notice::Dry run — no changes will be committed"
           cat <<EOF
 
-          Version: \`${OLD_VERSION}\` → \`${NEW_VERSION}\`\
+          Version: \`${OLD_VERSION}\` → \`${NEW_VERSION}\`\\
           Tag:     \`${TAG}\`
 
           --- Tag message ---
@@ -133,9 +131,9 @@ jobs:
           | ------------ |  ----------------- |
           | **Previous** | \`${OLD_VERSION}\` |
           | **New**      | \`${NEW_VERSION}\` |
-          | **Tag**      | [\`${TAG}\`]       |
+          | **Tag**      | [\`${TAG}\`][TAG]  |
 
           ${CHANGELOG}
 
-          [\`${TAG}\`]: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}
+          [TAG]: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}
           EOF
