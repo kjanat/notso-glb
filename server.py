@@ -18,16 +18,17 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from http.server import ThreadingHTTPServer
 
-PORT = int(os.environ.get("PORT", "8080"))
-MAX_UPLOAD_SIZE = int(
+PORT: int = int(os.environ.get("PORT", "8080"))
+MAX_UPLOAD_SIZE: int = int(
     os.environ.get("MAX_UPLOAD_SIZE", str(100 * 1024 * 1024))
 )  # 100 MB
 
-_TRUTHY = frozenset({"true", "1", "yes", "on"})
-_FALSY = frozenset({"false", "0", "no", "off"})
-_ALLOWED_BOOL_VALUES = _TRUTHY | _FALSY
-_ALLOWED_FORMATS = frozenset({"glb", "gltf", "gltf-embedded"})
-_PRINTABLE_ASCII_RE = re.compile(r"[^\x20-\x7E]")
+_TRUTHY: frozenset[str] = frozenset({"true", "1", "yes", "on"})
+_FALSY: frozenset[str] = frozenset({"false", "0", "no", "off"})
+_ALLOWED_BOOL_VALUES: frozenset[str] = _TRUTHY | _FALSY
+_ALLOWED_FORMATS: frozenset[str] = frozenset({"glb", "gltf", "gltf-embedded"})
+_PRINTABLE_ASCII_RE: re.Pattern[str] = re.compile(r"[^\x20-\x7E]")
+_SAFE_FILENAME_RE: re.Pattern[str] = re.compile(r"[^a-zA-Z0-9._-]")
 
 
 def parse_multipart(content_type: str, body: bytes) -> dict[str, bytes | str]:
@@ -196,7 +197,15 @@ class OptimizeHandler(BaseHTTPRequestHandler):
     """HTTP request handler that wraps the notso-glb CLI."""
 
     def log_message(self, fmt: str, *args: object) -> None:
-        """Log to stdout for container log collection."""
+        """Log a formatted message to stdout for container log collection.
+
+        Args:
+            fmt: A percent-style format string (e.g. ``"Running: %s"``).
+            *args: Values substituted into *fmt* via ``%`` formatting.
+
+        Returns:
+            None.
+        """
         print(f"[server] {fmt % args}")
 
     def do_GET(self) -> None:
@@ -243,9 +252,10 @@ class OptimizeHandler(BaseHTTPRequestHandler):
             )
             return
 
-        content_type = self.headers.get("Content-Type", "")
+        content_type_raw: str = self.headers.get("Content-Type", "")
+        content_type: str = content_type_raw.lower()
         try:
-            content_length = int(self.headers.get("Content-Length", 0))
+            content_length: int = int(self.headers.get("Content-Length", 0))
         except (ValueError, TypeError):
             self._respond_json(
                 HTTPStatus.BAD_REQUEST,
@@ -253,8 +263,10 @@ class OptimizeHandler(BaseHTTPRequestHandler):
             )
             return
 
-        if content_length == 0:
-            self._respond_json(HTTPStatus.BAD_REQUEST, {"error": "Empty request body"})
+        if content_length <= 0:
+            self._respond_json(
+                HTTPStatus.BAD_REQUEST, {"error": "Invalid Content-Length header"}
+            )
             return
 
         if content_length > MAX_UPLOAD_SIZE:
@@ -267,7 +279,7 @@ class OptimizeHandler(BaseHTTPRequestHandler):
             )
             return
 
-        body = self.rfile.read(content_length)
+        body: bytes = self.rfile.read(content_length)
 
         # Collect parameters from query string
         query_params: dict[str, str] = {}
@@ -277,7 +289,7 @@ class OptimizeHandler(BaseHTTPRequestHandler):
         # Handle multipart/form-data (file upload with optional params)
         if "multipart/form-data" in content_type:
             try:
-                parts = parse_multipart(content_type, body)
+                parts = parse_multipart(content_type_raw, body)
             except ValueError as e:
                 self._respond_json(
                     HTTPStatus.BAD_REQUEST, {"error": f"Invalid multipart: {e}"}
@@ -292,7 +304,7 @@ class OptimizeHandler(BaseHTTPRequestHandler):
                 )
                 return
 
-            filename = str(parts.get("_filename", "input.glb"))
+            filename: str = str(parts.get("_filename", "input.glb"))
 
             # Merge form text fields into params (query string takes precedence)
             for k, v in parts.items():
@@ -302,7 +314,11 @@ class OptimizeHandler(BaseHTTPRequestHandler):
         # Handle application/octet-stream (raw binary upload)
         elif "application/octet-stream" in content_type:
             file_data = body
-            filename = self.headers.get("X-Filename", "input.glb")
+            # Sanitize X-Filename: strip to basename, replace unsafe chars
+            raw_filename: str = self.headers.get("X-Filename", "input.glb")
+            filename = _SAFE_FILENAME_RE.sub("_", os.path.basename(raw_filename))
+            if not filename:
+                filename = "input.glb"
 
         else:
             self._respond_json(
