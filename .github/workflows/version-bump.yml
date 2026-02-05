@@ -1,55 +1,23 @@
 # yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
 ---
 name: Version Bump
-
 on:
   workflow_dispatch:
     inputs:
-      bump:
-        description: "Bump type (major, minor, patch) or exact version (e.g. 2.1.0)"
-        required: true
-        type: string
-      prerelease:
-        description: "Pre-release suffix (alpha, beta, rc) — leave empty for stable"
-        required: false
-        type: string
-        default: ""
-      dry_run:
-        description: "Preview changes without committing"
-        required: false
-        type: boolean
-        default: false
+      bump: { description: "Bump type", required: true, type: choice, options: [major, minor, patch] }
+      prerelease: { description: "Pre-release suffix", required: false, type: choice, options: [stable, alpha, beta, rc, post, dev], default: "stable" }
+      dry_run: { description: "Preview changes without committing", required: false, type: boolean, default: false }
   workflow_call:
     inputs:
-      bump:
-        description: "Bump type (major, minor, patch) or exact version (e.g. 2.1.0)"
-        required: true
-        type: string
-      prerelease:
-        description: "Pre-release suffix (alpha, beta, rc) — leave empty for stable"
-        required: false
-        type: string
-        default: ""
-      dry_run:
-        description: "Preview changes without committing"
-        required: false
-        type: boolean
-        default: false
+      bump: { description: "Bump type (major, minor, patch) or exact version (e.g. 2.1.0)", required: true, type: string }
+      prerelease: { description: "Pre-release suffix (stable, alpha, beta, rc, post, dev)", required: false, type: string, default: "stable" }
+      dry_run: { description: "Preview changes without committing", required: false, type: boolean, default: false }
     outputs:
-      old_version:
-        description: "Version before the bump"
-        value: ${{ jobs.bump.outputs.old_version }}
-      new_version:
-        description: "Version after the bump"
-        value: ${{ jobs.bump.outputs.new_version }}
-      tag:
-        description: "Git tag that was created"
-        value: ${{ jobs.bump.outputs.tag }}
-
+      old_version: { description: "Version before the bump", value: "${{ jobs.bump.outputs.old_version }}" }
+      new_version: { description: "Version after the bump", value: "${{ jobs.bump.outputs.new_version }}" }
+      tag: { description: "Git tag that was created", value: "${{ jobs.bump.outputs.tag }}" }
 permissions: { contents: write }
-
 env: { UV_PYTHON: "3.11" }
-
 jobs:
   bump:
     name: Bump version
@@ -59,14 +27,8 @@ jobs:
       new_version: ${{ steps.bump.outputs.new_version }}
       tag: ${{ steps.bump.outputs.tag }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-
+      - { uses: actions/checkout@v6, with: { fetch-depth: 0 } }
+      - { uses: ./.github/actions/install-uv }
       - name: Determine previous tag
         id: prev_tag
         run: |
@@ -77,11 +39,10 @@ jobs:
           else
             echo "No previous tags found — this will be the first release"
           fi
-
       - name: Bump version
         id: bump
         run: |
-          OLD_VERSION=$(uv version --short)
+          OLD_VERSION=$(uv version --output-format json | jq -r .version)
           echo "old_version=${OLD_VERSION}" >> "$GITHUB_OUTPUT"
           echo "Previous version: ${OLD_VERSION}"
 
@@ -90,19 +51,16 @@ jobs:
 
           # Determine if input is an exact version or a bump keyword
           if [[ "${BUMP_INPUT}" =~ ^[0-9]+\.[0-9]+\.[0-9] ]]; then
-            uv version "${BUMP_INPUT}"
-          elif [[ -n "${PRERELEASE}" ]]; then
-            uv version --bump "${BUMP_INPUT}" --bump "${PRERELEASE}"
+            NEW_VERSION=$(uv version "${BUMP_INPUT}" --output-format json | jq -r .version)
+          elif [[ "${PRERELEASE}" != "stable" ]]; then
+            NEW_VERSION=$(uv version --bump "${BUMP_INPUT}" --bump "${PRERELEASE}" --output-format json | jq -r .version)
           else
-            uv version --bump "${BUMP_INPUT}"
+            NEW_VERSION=$(uv version --bump "${BUMP_INPUT}" --output-format json | jq -r .version)
           fi
-
-          NEW_VERSION=$(uv version --short)
           TAG="v${NEW_VERSION}"
           echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "Bumped: ${OLD_VERSION} → ${NEW_VERSION} (tag: ${TAG})"
-
       - name: Generate changelog
         id: changelog
         env:
@@ -132,7 +90,6 @@ jobs:
             echo ""
             echo "CHANGELOG_EOF"
           } >> "$GITHUB_OUTPUT"
-
       - name: Preview (dry run)
         if: inputs.dry_run
         env:
@@ -144,14 +101,13 @@ jobs:
           echo "::notice::Dry run — no changes will be committed"
           cat <<EOF
 
-          Version: ${OLD_VERSION} → ${NEW_VERSION}  
-          Tag:     ${TAG}
+          Version: \`${OLD_VERSION}\` → \`${NEW_VERSION}\`\
+          Tag:     \`${TAG}\`
 
           --- Tag message ---
           ${CHANGELOG}
           -------------------
           EOF
-
       - name: Commit version bump and create tag
         if: ${{ !inputs.dry_run }}
         uses: stefanzweifel/git-auto-commit-action@v7
@@ -162,7 +118,6 @@ jobs:
           tag_name: ${{ steps.bump.outputs.tag }}
           skip_fetch: true
           skip_checkout: true
-
       - name: Summary
         if: ${{ !inputs.dry_run }}
         env:
@@ -174,11 +129,13 @@ jobs:
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
           ### Version bumped
 
-          | | Version |
-          |---|---|
+          |              | Version            |
+          | ------------ |  ----------------- |
           | **Previous** | \`${OLD_VERSION}\` |
-          | **New** | \`${NEW_VERSION}\` |
-          | **Tag** | [\`${TAG}\`](https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}) |
+          | **New**      | \`${NEW_VERSION}\` |
+          | **Tag**      | [\`${TAG}\`]       |
 
           ${CHANGELOG}
+
+          [\`${TAG}\`]: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}
           EOF

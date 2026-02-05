@@ -9,7 +9,7 @@
       "wrap_guides": [88]
     },
     "TOML": { "wrap_guides": [110] },
-    "YAML": { "wrap_guides": [140] }
+    "YAML": { "wrap_guides": [160] }
   },
   "context_servers": {
     "blender": {
