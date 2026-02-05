@@ -63,7 +63,6 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -91,13 +90,10 @@ jobs:
 
           # Determine if input is an exact version or a bump keyword
           if [[ "${BUMP_INPUT}" =~ ^[0-9]+\.[0-9]+\.[0-9] ]]; then
-            # Exact version specified
             uv version "${BUMP_INPUT}"
           elif [[ -n "${PRERELEASE}" ]]; then
-            # Bump with pre-release suffix (e.g. --bump minor --bump rc)
             uv version --bump "${BUMP_INPUT}" --bump "${PRERELEASE}"
           else
-            # Simple bump (major, minor, patch)
             uv version --bump "${BUMP_INPUT}"
           fi
 
@@ -122,7 +118,7 @@ jobs:
             echo ""
 
             if [[ -n "${PREV_TAG}" ]]; then
-              echo "**Full diff**: [\`${OLD_VERSION}...${NEW_VERSION}\`](https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${NEW_TAG})"
+              echo "**Full diff**: [\`${OLD_VERSION}...${NEW_VERSION}\`](https://github.com/${GITHUB_REPOSITORY}/compare/${PREV_TAG}...${NEW_TAG})"
               echo ""
               echo "### Changes since ${PREV_TAG}"
               echo ""
@@ -146,31 +142,26 @@ jobs:
           CHANGELOG: ${{ steps.changelog.outputs.body }}
         run: |
           echo "::notice::Dry run — no changes will be committed"
-          echo ""
-          echo "Version: ${OLD_VERSION} → ${NEW_VERSION}"
-          echo "Tag:     ${TAG}"
-          echo ""
-          echo "--- Tag message ---"
-          echo "${CHANGELOG}"
-          echo "-------------------"
+          cat <<EOF
 
-      - name: Commit, tag, and push
+          Version: ${OLD_VERSION} → ${NEW_VERSION}  
+          Tag:     ${TAG}
+
+          --- Tag message ---
+          ${CHANGELOG}
+          -------------------
+          EOF
+
+      - name: Commit version bump and create tag
         if: ${{ !inputs.dry_run }}
-        env:
-          NEW_VERSION: ${{ steps.bump.outputs.new_version }}
-          TAG: ${{ steps.bump.outputs.tag }}
-          OLD_VERSION: ${{ steps.bump.outputs.old_version }}
-          CHANGELOG: ${{ steps.changelog.outputs.body }}
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add pyproject.toml uv.lock
-          git commit -m "chore: bump version ${OLD_VERSION} → ${NEW_VERSION}"
-
-          git tag -a "${TAG}" -m "${CHANGELOG}"
-
-          git push origin HEAD "${TAG}"
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "chore: bump version ${{ steps.bump.outputs.old_version }} → ${{ steps.bump.outputs.new_version }}"
+          file_pattern: pyproject.toml uv.lock
+          tagging_message: ${{ steps.changelog.outputs.body }}
+          tag_name: ${{ steps.bump.outputs.tag }}
+          skip_fetch: true
+          skip_checkout: true
 
       - name: Summary
         if: ${{ !inputs.dry_run }}
@@ -180,14 +171,14 @@ jobs:
           TAG: ${{ steps.bump.outputs.tag }}
           CHANGELOG: ${{ steps.changelog.outputs.body }}
         run: |
-          {
-            echo "### Version bumped"
-            echo ""
-            echo "| | Version |"
-            echo "|---|---|"
-            echo "| **Previous** | \`${OLD_VERSION}\` |"
-            echo "| **New** | \`${NEW_VERSION}\` |"
-            echo "| **Tag** | [\`${TAG}\`](https://github.com/${{ github.repository }}/releases/tag/${TAG}) |"
-            echo ""
-            echo "${CHANGELOG}"
-          } >> "$GITHUB_STEP_SUMMARY"
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ### Version bumped
+
+          | | Version |
+          |---|---|
+          | **Previous** | \`${OLD_VERSION}\` |
+          | **New** | \`${NEW_VERSION}\` |
+          | **Tag** | [\`${TAG}\`](https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}) |
+
+          ${CHANGELOG}
+          EOF
