@@ -164,8 +164,7 @@ def build_cli_args(params: dict[str, str]) -> list[str]:
             ) from None
         if size < 0 or size > 16384:
             raise ValueError(
-                f"max_texture_size out of range: {size}. "
-                "Expected 0-16384."
+                f"max_texture_size out of range: {size}. Expected 0-16384."
             )
         args.extend(["--max-texture-size", str(size)])
 
