@@ -197,14 +197,25 @@ def optimize(
         final_output_path = output.resolve()
 
     # gltfpack cannot parse Draco-compressed files, so disable Draco at the
-    # export stage when gltfpack post-processing is enabled.  gltfpack's own
+    # export stage when gltfpack post-processing is available.  gltfpack's own
     # -cc flag will handle mesh compression instead.
+    # Check availability early so we only disable Draco when gltfpack will
+    # actually run (not when user passed --gltfpack but no backend exists).
     export_draco = use_draco
-    if use_gltfpack and use_draco:
-        console.print(
-            "[yellow]Draco disabled for export (gltfpack will handle mesh compression)[/]"
-        )
-        export_draco = False
+    gltfpack_available = False
+    if use_gltfpack:
+        from notso_glb.wasm import is_available as wasm_available
+
+        native_available = find_gltfpack() is not None
+        wasm_ok = wasm_available()
+        gltfpack_available = native_available or wasm_ok
+
+        if gltfpack_available and use_draco:
+            console.print(
+                "[bold yellow][WARN][/] Draco disabled for export "
+                "(gltfpack will handle mesh compression)"
+            )
+            export_draco = False
 
     # Run optimization
     result = optimize_and_export(
@@ -228,12 +239,8 @@ def optimize(
     if use_gltfpack:
         from notso_glb.utils.gltfpack import run_gltfpack
         from notso_glb.utils.logging import format_bytes
-        from notso_glb.wasm import is_available as wasm_available
 
-        native_available = find_gltfpack() is not None
-        wasm_ok = wasm_available()
-
-        if not native_available and not wasm_ok:
+        if not gltfpack_available:
             console.print(
                 "[bold yellow][WARN][/] gltfpack not found and WASM unavailable, skipping"
             )
@@ -243,7 +250,7 @@ def optimize(
             original_size = Path(result).stat().st_size
 
             # Draco is already disabled at export time when gltfpack is
-            # enabled (see above), so mesh_compress=True is always safe.
+            # available (see above), so mesh_compress=True is always safe.
             success, packed_path, msg = run_gltfpack(
                 Path(result),
                 output_path=Path(result),  # Overwrite original
