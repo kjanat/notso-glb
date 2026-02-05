@@ -31,19 +31,16 @@ jobs:
       - name: install shfmt
         run: sudo apt-get install -y shfmt >/dev/null 2>&1
       - run: uv sync --all-groups --all-extras
-      - name: Run Claude Code
-        id: claude
+      - name: "@claude"
         uses: anthropics/claude-code-action@v1
+        id: claude
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           use_sticky_comment: true
           use_commit_signing: true
           track_progress: true
           settings: ".github/config/claude.json"
-
-          additional_permissions: |
-            actions: read
-
+          additional_permissions: "actions: read"
           prompt: ${{ github.event.inputs.prompt || '' }}
           label_trigger: claude
           assignee_trigger: claude
@@ -52,9 +49,10 @@ jobs:
           allowed_bots: "coderabbitai[bot],dependabot[bot],renovate[bot]"
           claude_args: |
             --max-turns 25
-            --model claude-opus-4-5
+            --model claude-opus-4-6
 
   claude-bot-review:
+    name: "@claude v bots"
     if: |
       github.event_name == 'pull_request' && (
         github.actor == 'dependabot[bot]' ||
@@ -79,17 +77,25 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           use_commit_signing: true
           settings: ".github/config/claude.json"
-          additional_permissions: |
-            actions: read
+          additional_permissions: "actions: read"
           prompt: |
-            Review this dependency update PR by ${{ github.actor }}.
+            Review this dependency update PR #${{ github.event.pull_request.number }} by ${{ github.actor }}.
+            Title: ${{ github.event.pull_request.title }}
+            Base branch: ${{ github.base_ref }}
+            Repo: ${{ github.repository }}
 
-            1. Read the PR diff and changelog/release notes for updated packages
+            <pr_description>
+            ${{ github.event.pull_request.body }}
+            </pr_description>
+
+            1. Review the PR description above for changelogs and release notes
             2. Run `just test` to check for test failures
             3. Run `just lint` to verify lint passes
             4. Check for breaking changes, deprecations, or security advisories
-            5. If everything passes, approve the PR with a summary
-            6. If issues found, request changes with specific details
+            5. If issues found, fix them: update code for compatibility, fix tests, fix lint
+            6. If everything passes (or after fixes), approve the PR with a summary
+            7. Apply a label using `gh pr edit ${{ github.event.pull_request.number }} --add-label "claude: approved"`
+               or `--add-label "claude: needs-attention"` if you couldn't fix it
           claude_args: |
             --max-turns 15
-            --model claude-sonnet-4-5-20250929
+            --model claude-sonnet-4-5
