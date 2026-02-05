@@ -11,19 +11,27 @@ import os
 import shutil
 import subprocess
 import tempfile
+import urllib.parse
 import uuid
 from http import HTTPStatus
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer
 
 PORT = int(os.environ.get("PORT", "8080"))
+MAX_UPLOAD_SIZE = int(os.environ.get("MAX_UPLOAD_SIZE", str(100 * 1024 * 1024)))  # 100 MB
 
 
 def parse_multipart(content_type: str, body: bytes) -> dict[str, bytes | str]:
     """Parse a multipart/form-data request body.
 
-    Returns a dict with field names as keys. File fields have bytes values,
-    text fields have str values. The special key ``_filename`` stores the
-    uploaded file's original name when present.
+    Args:
+        content_type: The Content-Type header value including the boundary parameter.
+        body: Raw request body bytes.
+
+    Returns:
+        A dict mapping field names to their values. File fields have ``bytes``
+        values, text fields have ``str`` values. The special key ``_filename``
+        stores the uploaded file's original name when present.
     """
     # Extract boundary from Content-Type header
     boundary = ""
@@ -100,7 +108,15 @@ VALUE_OPTIONS: dict[str, str] = {
 
 
 def build_cli_args(params: dict[str, str]) -> list[str]:
-    """Convert request parameters to notso-glb CLI arguments."""
+    """Convert request parameters to notso-glb CLI arguments.
+
+    Args:
+        params: Mapping of parameter names to their string values
+            (e.g. ``{"draco": "true", "max_texture_size": "512"}``).
+
+    Returns:
+        A list of CLI flag strings ready to be passed to the notso-glb command.
+    """
     args: list[str] = []
 
     for key, (on_flag, off_flag) in BOOL_FLAGS.items():
@@ -119,17 +135,17 @@ def build_cli_args(params: dict[str, str]) -> list[str]:
 
 
 def parse_query_string(qs: str) -> dict[str, str]:
-    """Parse a URL query string into a dict (no external deps)."""
-    result: dict[str, str] = {}
-    if not qs:
-        return result
-    for pair in qs.split("&"):
-        if "=" in pair:
-            k, v = pair.split("=", 1)
-            result[k] = v
-        else:
-            result[pair] = ""
-    return result
+    """Parse a URL query string into a dict with proper percent-decoding.
+
+    Args:
+        qs: Raw query string (everything after the ``?``), e.g.
+            ``"draco=true&max_texture_size=512"``.
+
+    Returns:
+        A dict mapping decoded parameter names to decoded values.
+        When duplicate keys exist the last value wins.
+    """
+    return dict(urllib.parse.parse_qsl(qs, keep_blank_values=True))
 
 
 class OptimizeHandler(BaseHTTPRequestHandler):
@@ -186,6 +202,16 @@ class OptimizeHandler(BaseHTTPRequestHandler):
 
         if content_length == 0:
             self._respond_json(HTTPStatus.BAD_REQUEST, {"error": "Empty request body"})
+            return
+
+        if content_length > MAX_UPLOAD_SIZE:
+            self._respond_json(
+                HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+                {
+                    "error": f"Upload exceeds maximum size "
+                    f"({MAX_UPLOAD_SIZE // (1024 * 1024)} MB)"
+                },
+            )
             return
 
         body = self.rfile.read(content_length)
@@ -335,7 +361,7 @@ class OptimizeHandler(BaseHTTPRequestHandler):
         finally:
             shutil.rmtree(work_dir, ignore_errors=True)
 
-    def _respond_json(self, status: HTTPStatus, data: dict) -> None:
+    def _respond_json(self, status: HTTPStatus, data: dict[str, object]) -> None:
         """Send a JSON response."""
         body = json.dumps(data, indent=2).encode("utf-8")
         self.send_response(status)
@@ -346,7 +372,12 @@ class OptimizeHandler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
-    server = HTTPServer(("0.0.0.0", PORT), OptimizeHandler)
+    """Start the HTTP server and block until interrupted.
+
+    Reads ``PORT`` from the environment (default 8080). Uses a threading server
+    so that long-running ``/optimize`` requests do not block ``/health`` checks.
+    """
+    server = ThreadingHTTPServer(("0.0.0.0", PORT), OptimizeHandler)
     print(f"[server] notso-glb HTTP wrapper listening on port {PORT}")
     try:
         server.serve_forever()

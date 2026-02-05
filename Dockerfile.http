@@ -76,9 +76,9 @@ USER appuser
 ENV PORT=8080
 EXPOSE 8080
 
-# Health check hitting the HTTP endpoint
+# Health check hitting the HTTP endpoint (reads PORT from env, default 8080)
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${PORT}/health')" || exit 1
 
 # Override entrypoint to run the HTTP server instead of the CLI
 ENTRYPOINT ["python", "/app/server.py"]
