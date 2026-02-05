@@ -1,0 +1,85 @@
+# Dockerfile.http - HTTP wrapper for Cloudflare Containers/Workflows
+# Wraps the notso-glb CLI image with a lightweight HTTP server
+# so it can be used in Cloudflare Containers and Workflows.
+#
+# Build:
+# ```sh
+# docker build -f Dockerfile.http -t notso-glb:http .
+# ```
+#
+# Run:
+# ```sh
+# docker run --rm -p 8080:8080 notso-glb:http
+# ```
+#
+# Usage:
+# ```sh
+# # Health check
+# curl http://localhost:8080/health
+#
+# # Optimize a GLB file (multipart upload)
+# curl -X POST http://localhost:8080/optimize \
+#   -F "file=@model.glb" \
+#   -o optimized.glb
+#
+# # With options (query params)
+# curl -X POST "http://localhost:8080/optimize?draco=false&max_texture_size=512" \
+#   -F "file=@model.glb" \
+#   -o optimized.glb
+#
+# # Raw binary upload
+# curl -X POST http://localhost:8080/optimize \
+#   -H "Content-Type: application/octet-stream" \
+#   -H "X-Filename: model.glb" \
+#   --data-binary @model.glb \
+#   -o optimized.glb
+# ```
+#
+# Cloudflare Containers configuration (wrangler.jsonc):
+# ```jsonc
+# {
+#   "containers": [{
+#     "class_name": "NotsoGlb",
+#     "image": "./Dockerfile.http",
+#     "max_instances": 5,
+#     "defaultPort": 8080
+#   }]
+# }
+# ```
+#
+# See CLI.md for all optimization options: https://github.com/kjanat/notso-glb/blob/master/CLI.md
+
+# =============================================================================
+# Wraps the production notso-glb image with an HTTP server
+# =============================================================================
+FROM kjanat/notso-glb:master
+
+# Labels for container metadata
+LABEL org.opencontainers.image.title="notso-glb-http"
+LABEL org.opencontainers.image.description="GLB Export Optimizer - HTTP API for Cloudflare Containers"
+LABEL org.opencontainers.image.source="https://github.com/kjanat/notso-glb"
+LABEL org.opencontainers.image.licenses="GPL-3.0"
+
+# Switch to root to copy server and configure
+USER root
+
+# Copy the HTTP server script
+COPY server.py /app/server.py
+
+# Ensure appuser owns the server script
+RUN chown appuser:appuser /app/server.py
+
+# Switch back to non-root user
+USER appuser
+
+# Port the HTTP server listens on (Cloudflare Containers default: 8080)
+ENV PORT=8080
+EXPOSE 8080
+
+# Health check hitting the HTTP endpoint
+HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
+
+# Override entrypoint to run the HTTP server instead of the CLI
+ENTRYPOINT ["python", "/app/server.py"]
+CMD []
