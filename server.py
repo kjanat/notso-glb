@@ -18,7 +18,9 @@ from http.server import BaseHTTPRequestHandler
 from http.server import ThreadingHTTPServer
 
 PORT = int(os.environ.get("PORT", "8080"))
-MAX_UPLOAD_SIZE = int(os.environ.get("MAX_UPLOAD_SIZE", str(100 * 1024 * 1024)))  # 100 MB
+MAX_UPLOAD_SIZE = int(
+    os.environ.get("MAX_UPLOAD_SIZE", str(100 * 1024 * 1024))
+)  # 100 MB
 
 
 def parse_multipart(content_type: str, body: bytes) -> dict[str, bytes | str]:
