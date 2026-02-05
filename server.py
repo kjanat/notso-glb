@@ -47,7 +47,14 @@ def parse_multipart(content_type: str, body: bytes) -> dict[str, bytes | str]:
     for part in content_type.split(";"):
         part = part.strip()
         if part.startswith("boundary="):
-            boundary = part[len("boundary=") :]
+            boundary = part[len("boundary=") :].strip()
+            # Strip optional quotes per RFC 2046
+            if (
+                len(boundary) >= 2
+                and boundary[0] == boundary[-1]
+                and boundary[0] in ('"', "'")
+            ):
+                boundary = boundary[1:-1]
             break
     if not boundary:
         raise ValueError("Missing multipart boundary")
@@ -237,7 +244,14 @@ class OptimizeHandler(BaseHTTPRequestHandler):
             return
 
         content_type = self.headers.get("Content-Type", "")
-        content_length = int(self.headers.get("Content-Length", 0))
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+        except (ValueError, TypeError):
+            self._respond_json(
+                HTTPStatus.BAD_REQUEST,
+                {"error": "Invalid Content-Length header"},
+            )
+            return
 
         if content_length == 0:
             self._respond_json(HTTPStatus.BAD_REQUEST, {"error": "Empty request body"})
@@ -344,11 +358,12 @@ class OptimizeHandler(BaseHTTPRequestHandler):
 
             cmd = [
                 "notso-glb",
-                input_path,
+                *extra_args,
+                "--quiet",
                 "-o",
                 output_path,
-                "--quiet",
-                *extra_args,
+                "--",
+                input_path,
             ]
 
             self.log_message("Running: %s", " ".join(cmd))
