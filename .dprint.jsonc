@@ -2,10 +2,8 @@
   "$schema": "https://dprint.dev/schemas/v0.json",
   "typescript": {},
   "json": {},
-  "markdown": { "textWrap": "always", "emphasisKind": "asterisks" },
-  "dockerfile": {
-    "associations": ["Dockerfile", "Dockerfile.*"],
-  },
+  "markdown": { "textWrap": "always", "emphasisKind": "asterisks", "associations": [".rules", "*.md"] },
+  "dockerfile": { "associations": ["Dockerfile", "Dockerfile.*"] },
   "ruff": { "preview": true },
   "jupyter": {},
   "malva": {},
