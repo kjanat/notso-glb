@@ -2,17 +2,33 @@
 ---
 name: Publish Docker image
 on:
+  push:
+    tags: ["v*.*.*"]
   workflow_dispatch:
-  # inputs:
-  #   version: { default: latest, description: "Specific version to publish, e.g. 1.0.0 (default: latest)", required: false, type: string }
+    inputs:
+      build_type:
+        description: "Build type (release: from PyPI, nightly: from source)"
+        required: false
+        default: "release"
+        type: choice
+        options:
+          - release
+          - nightly
+  schedule:
+    # Nightly build at 2:00 AM UTC
+    - cron: "0 2 * * *"
   workflow_run: { workflows: [Publish to PyPI], types: [completed] }
-# env:
-#   version: ${{ github.event.inputs.version || 'latest' }}
+
 defaults: { run: { shell: bash } }
+
 jobs:
   push_to_registry:
     name: Push Docker image to Docker Hub
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     permissions: { packages: write, contents: read, attestations: write, id-token: write }
     environment: { name: docker }
@@ -30,17 +46,62 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
 
-      - name: Determine package version
-        id: pkg
+      - name: Determine build parameters
+        id: params
         run: |
-          if [[ -f version.txt ]]; then
-            VERSION=$(cat version.txt | tr -d '[:space:]')
-            printf "spec=notso-glb==%s" "${VERSION}" | tee -a "${GITHUB_OUTPUT}"
-            echo "Installing notso-glb==${VERSION}"
+          EVENT="${{ github.event_name }}"
+          BUILD_TYPE="${{ github.event.inputs.build_type }}"
+
+          # --- Nightly / dev builds (schedule or manual nightly) ---
+          if [[ "${EVENT}" == "schedule" ]] || [[ "${EVENT}" == "workflow_dispatch" && "${BUILD_TYPE}" == "nightly" ]]; then
+            echo "dockerfile=Dockerfile.dev"  >> "$GITHUB_OUTPUT"
+            echo "is_nightly=true"            >> "$GITHUB_OUTPUT"
+            echo "is_release=false"           >> "$GITHUB_OUTPUT"
+            echo "Building nightly image from source"
+
+          # --- Tag push (v1.2.3) – build from source immediately ---
+          elif [[ "${EVENT}" == "push" ]]; then
+            TAG="${GITHUB_REF_NAME}"
+            VERSION="${TAG#v}"
+            MAJOR="${VERSION%%.*}"
+            MINOR="${VERSION#*.}"; MINOR="${MINOR%%.*}"
+            echo "dockerfile=Dockerfile.dev"  >> "$GITHUB_OUTPUT"
+            echo "is_nightly=false"           >> "$GITHUB_OUTPUT"
+            echo "is_release=true"            >> "$GITHUB_OUTPUT"
+            echo "version=${VERSION}"         >> "$GITHUB_OUTPUT"
+            echo "major=${MAJOR}"             >> "$GITHUB_OUTPUT"
+            echo "minor=${MINOR}"             >> "$GITHUB_OUTPUT"
+            echo "Building release ${VERSION} from source (tag push)"
+
+          # --- After PyPI publish – rebuild from PyPI ---
+          elif [[ "${EVENT}" == "workflow_run" ]]; then
+            if [[ -f version.txt ]]; then
+              VERSION=$(cat version.txt | tr -d '[:space:]')
+              MAJOR="${VERSION%%.*}"
+              MINOR="${VERSION#*.}"; MINOR="${MINOR%%.*}"
+              echo "dockerfile=Dockerfile"              >> "$GITHUB_OUTPUT"
+              echo "is_nightly=false"                   >> "$GITHUB_OUTPUT"
+              echo "is_release=true"                    >> "$GITHUB_OUTPUT"
+              echo "version=${VERSION}"                 >> "$GITHUB_OUTPUT"
+              echo "major=${MAJOR}"                     >> "$GITHUB_OUTPUT"
+              echo "minor=${MINOR}"                     >> "$GITHUB_OUTPUT"
+              echo "spec=notso-glb==${VERSION}"         >> "$GITHUB_OUTPUT"
+              echo "Building release ${VERSION} from PyPI"
+            else
+              echo "dockerfile=Dockerfile"    >> "$GITHUB_OUTPUT"
+              echo "is_nightly=false"         >> "$GITHUB_OUTPUT"
+              echo "is_release=true"          >> "$GITHUB_OUTPUT"
+              echo "spec=notso-glb"           >> "$GITHUB_OUTPUT"
+              echo "::warning::version.txt not found, defaulting to latest notso-glb"
+            fi
+
+          # --- Manual release dispatch (latest from PyPI) ---
           else
-            printf "spec=notso-glb" | tee -a "${GITHUB_OUTPUT}"
-            echo "Installing latest notso-glb"
-            echo "::warning::version.txt not found, defaulting to latest notso-glb"
+            echo "dockerfile=Dockerfile"      >> "$GITHUB_OUTPUT"
+            echo "is_nightly=false"           >> "$GITHUB_OUTPUT"
+            echo "is_release=true"            >> "$GITHUB_OUTPUT"
+            echo "spec=notso-glb"             >> "$GITHUB_OUTPUT"
+            echo "Building latest release from PyPI"
           fi
 
       - name: Set up Docker Buildx
@@ -60,16 +121,31 @@ jobs:
           images: |
             docker.io/${{ github.repository }}
             ghcr.io/${{ github.repository }}
+          tags: |
+            # --- Semver tags from git tag push (v1.2.3 → 1.2.3, 1.2, 1, latest) ---
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            # --- Semver tags from workflow_run (PyPI publish) ---
+            type=raw,value=${{ steps.params.outputs.version }},enable=${{ github.event_name == 'workflow_run' && steps.params.outputs.version != '' }}
+            type=raw,value=${{ steps.params.outputs.major }}.${{ steps.params.outputs.minor }},enable=${{ github.event_name == 'workflow_run' && steps.params.outputs.version != '' }}
+            type=raw,value=${{ steps.params.outputs.major }},enable=${{ github.event_name == 'workflow_run' && steps.params.outputs.version != '' }}
+            # --- latest tag for any release build ---
+            type=raw,value=latest,enable=${{ steps.params.outputs.is_release == 'true' }}
+            # --- Nightly tags ---
+            type=schedule,pattern=nightly
+            type=raw,value=nightly,enable=${{ steps.params.outputs.is_nightly == 'true' }}
+            type=raw,value=nightly-{{date 'YYYYMMDD'}},enable=${{ steps.params.outputs.is_nightly == 'true' }}
 
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile
+          file: ./${{ steps.params.outputs.dockerfile }}
           push: true
           build-args: |
-            NOTSO_GLB_VERSION=${{ steps.pkg.outputs.spec }}
+            NOTSO_GLB_VERSION=${{ steps.params.outputs.spec }}
           # Single arch only, gltfpack binary is not available for arm64,
           # and configuring conditional inclusion of the binary I aint got no time for.
           platforms: linux/amd64
@@ -96,6 +172,7 @@ jobs:
           push-to-registry: true
 
       - name: Update Docker Hub description
+        if: steps.params.outputs.is_release == 'true'
         uses: peter-evans/dockerhub-description@v5
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
