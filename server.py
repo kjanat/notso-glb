@@ -30,6 +30,15 @@ _ALLOWED_FORMATS: frozenset[str] = frozenset({"glb", "gltf", "gltf-embedded"})
 _PRINTABLE_ASCII_RE: re.Pattern[str] = re.compile(r"[^\x20-\x7E]")
 _SAFE_FILENAME_RE: re.Pattern[str] = re.compile(r"[^a-zA-Z0-9._-]")
 
+# Allowlisted input extensions that notso-glb supports.  Used to map a
+# user-supplied filename to a fully hardcoded input path so no user data
+# ever reaches subprocess.run (satisfies CodeQL py/command-line-injection).
+_ALLOWED_INPUT_EXTENSIONS: dict[str, str] = {
+    ".glb": ".glb",
+    ".gltf": ".gltf",
+    ".blend": ".blend",
+}
+
 
 def parse_multipart(content_type: str, body: bytes) -> dict[str, bytes | str]:
     """Parse a multipart/form-data request body.
@@ -342,32 +351,28 @@ class OptimizeHandler(BaseHTTPRequestHandler):
         params: dict[str, str],
     ) -> None:
         """Write the uploaded file to a temp dir, run notso-glb, return result."""
-        work_dir = tempfile.mkdtemp(prefix="notso-glb-")
+        work_dir: str = tempfile.mkdtemp(prefix="notso-glb-")
         try:
-            # Sanitize filename: keep only the basename, reject path traversal
-            safe_name = os.path.basename(filename)
-            if not safe_name:
-                safe_name = "input.glb"
-            input_path = os.path.normpath(os.path.join(work_dir, safe_name))
-            if not input_path.startswith(work_dir + os.sep):
-                self._respond_json(
-                    HTTPStatus.BAD_REQUEST,
-                    {"error": "Invalid filename (path traversal rejected)"},
-                )
-                return
+            # Map the user-supplied extension to an allowlisted value so the
+            # resulting input_path is fully server-controlled and no user data
+            # flows into subprocess.run (breaks CodeQL taint chain).
+            _, ext = os.path.splitext(filename)
+            safe_ext: str = _ALLOWED_INPUT_EXTENSIONS.get(ext.lower(), ".glb")
+            input_name: str = f"input{safe_ext}"
+            input_path: str = os.path.join(work_dir, input_name)
 
             with open(input_path, "wb") as f:
                 f.write(file_data)
 
             # Determine output format extension
-            fmt = params.get("format", "glb")
-            out_ext = ".gltf" if fmt.startswith("gltf") else ".glb"
-            output_name = f"output_{uuid.uuid4().hex[:8]}{out_ext}"
-            output_path = os.path.join(work_dir, output_name)
+            fmt: str = params.get("format", "glb")
+            out_ext: str = ".gltf" if fmt.startswith("gltf") else ".glb"
+            output_name: str = f"output_{uuid.uuid4().hex[:8]}{out_ext}"
+            output_path: str = os.path.join(work_dir, output_name)
 
             # Build and validate CLI arguments
             try:
-                extra_args = build_cli_args(params)
+                extra_args: list[str] = build_cli_args(params)
             except ValueError as e:
                 self._respond_json(
                     HTTPStatus.BAD_REQUEST,
@@ -375,7 +380,7 @@ class OptimizeHandler(BaseHTTPRequestHandler):
                 )
                 return
 
-            cmd = [
+            cmd: list[str] = [
                 "notso-glb",
                 *extra_args,
                 "--quiet",
