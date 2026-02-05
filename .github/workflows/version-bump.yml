@@ -1,0 +1,193 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+---
+name: Version Bump
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Bump type (major, minor, patch) or exact version (e.g. 2.1.0)"
+        required: true
+        type: string
+      prerelease:
+        description: "Pre-release suffix (alpha, beta, rc) — leave empty for stable"
+        required: false
+        type: string
+        default: ""
+      dry_run:
+        description: "Preview changes without committing"
+        required: false
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      bump:
+        description: "Bump type (major, minor, patch) or exact version (e.g. 2.1.0)"
+        required: true
+        type: string
+      prerelease:
+        description: "Pre-release suffix (alpha, beta, rc) — leave empty for stable"
+        required: false
+        type: string
+        default: ""
+      dry_run:
+        description: "Preview changes without committing"
+        required: false
+        type: boolean
+        default: false
+    outputs:
+      old_version:
+        description: "Version before the bump"
+        value: ${{ jobs.bump.outputs.old_version }}
+      new_version:
+        description: "Version after the bump"
+        value: ${{ jobs.bump.outputs.new_version }}
+      tag:
+        description: "Git tag that was created"
+        value: ${{ jobs.bump.outputs.tag }}
+
+permissions: { contents: write }
+
+env: { UV_PYTHON: "3.11" }
+
+jobs:
+  bump:
+    name: Bump version
+    runs-on: ubuntu-latest
+    outputs:
+      old_version: ${{ steps.bump.outputs.old_version }}
+      new_version: ${{ steps.bump.outputs.new_version }}
+      tag: ${{ steps.bump.outputs.tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Determine previous tag
+        id: prev_tag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "tag=${PREV_TAG}" >> "$GITHUB_OUTPUT"
+          if [[ -n "${PREV_TAG}" ]]; then
+            echo "Found previous tag: ${PREV_TAG}"
+          else
+            echo "No previous tags found — this will be the first release"
+          fi
+
+      - name: Bump version
+        id: bump
+        run: |
+          OLD_VERSION=$(uv version --short)
+          echo "old_version=${OLD_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Previous version: ${OLD_VERSION}"
+
+          BUMP_INPUT="${{ inputs.bump }}"
+          PRERELEASE="${{ inputs.prerelease }}"
+
+          # Determine if input is an exact version or a bump keyword
+          if [[ "${BUMP_INPUT}" =~ ^[0-9]+\.[0-9]+\.[0-9] ]]; then
+            # Exact version specified
+            uv version "${BUMP_INPUT}"
+          elif [[ -n "${PRERELEASE}" ]]; then
+            # Bump with pre-release suffix (e.g. --bump minor --bump rc)
+            uv version --bump "${BUMP_INPUT}" --bump "${PRERELEASE}"
+          else
+            # Simple bump (major, minor, patch)
+            uv version --bump "${BUMP_INPUT}"
+          fi
+
+          NEW_VERSION=$(uv version --short)
+          TAG="v${NEW_VERSION}"
+          echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Bumped: ${OLD_VERSION} → ${NEW_VERSION} (tag: ${TAG})"
+
+      - name: Generate changelog
+        id: changelog
+        env:
+          PREV_TAG: ${{ steps.prev_tag.outputs.tag }}
+          NEW_TAG: ${{ steps.bump.outputs.tag }}
+          OLD_VERSION: ${{ steps.bump.outputs.old_version }}
+          NEW_VERSION: ${{ steps.bump.outputs.new_version }}
+        run: |
+          {
+            echo "body<<CHANGELOG_EOF"
+
+            echo "## ${NEW_TAG}"
+            echo ""
+
+            if [[ -n "${PREV_TAG}" ]]; then
+              echo "**Full diff**: [\`${OLD_VERSION}...${NEW_VERSION}\`](https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${NEW_TAG})"
+              echo ""
+              echo "### Changes since ${PREV_TAG}"
+              echo ""
+              git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges | head -50
+            else
+              echo "### Initial release"
+              echo ""
+              git log --pretty=format:"- %s (%h)" --no-merges | head -50
+            fi
+
+            echo ""
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Preview (dry run)
+        if: inputs.dry_run
+        env:
+          OLD_VERSION: ${{ steps.bump.outputs.old_version }}
+          NEW_VERSION: ${{ steps.bump.outputs.new_version }}
+          TAG: ${{ steps.bump.outputs.tag }}
+          CHANGELOG: ${{ steps.changelog.outputs.body }}
+        run: |
+          echo "::notice::Dry run — no changes will be committed"
+          echo ""
+          echo "Version: ${OLD_VERSION} → ${NEW_VERSION}"
+          echo "Tag:     ${TAG}"
+          echo ""
+          echo "--- Tag message ---"
+          echo "${CHANGELOG}"
+          echo "-------------------"
+
+      - name: Commit, tag, and push
+        if: ${{ !inputs.dry_run }}
+        env:
+          NEW_VERSION: ${{ steps.bump.outputs.new_version }}
+          TAG: ${{ steps.bump.outputs.tag }}
+          OLD_VERSION: ${{ steps.bump.outputs.old_version }}
+          CHANGELOG: ${{ steps.changelog.outputs.body }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add pyproject.toml uv.lock
+          git commit -m "chore: bump version ${OLD_VERSION} → ${NEW_VERSION}"
+
+          git tag -a "${TAG}" -m "${CHANGELOG}"
+
+          git push origin HEAD "${TAG}"
+
+      - name: Summary
+        if: ${{ !inputs.dry_run }}
+        env:
+          OLD_VERSION: ${{ steps.bump.outputs.old_version }}
+          NEW_VERSION: ${{ steps.bump.outputs.new_version }}
+          TAG: ${{ steps.bump.outputs.tag }}
+          CHANGELOG: ${{ steps.changelog.outputs.body }}
+        run: |
+          {
+            echo "### Version bumped"
+            echo ""
+            echo "| | Version |"
+            echo "|---|---|"
+            echo "| **Previous** | \`${OLD_VERSION}\` |"
+            echo "| **New** | \`${NEW_VERSION}\` |"
+            echo "| **Tag** | [\`${TAG}\`](https://github.com/${{ github.repository }}/releases/tag/${TAG}) |"
+            echo ""
+            echo "${CHANGELOG}"
+          } >> "$GITHUB_STEP_SUMMARY"
