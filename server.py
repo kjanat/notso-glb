@@ -304,7 +304,10 @@ class OptimizeHandler(BaseHTTPRequestHandler):
                 )
                 return
 
-            filename: str = str(parts.get("_filename", "input.glb"))
+            raw_mp_name: str = str(parts.get("_filename", "input.glb"))
+            filename: str = _SAFE_FILENAME_RE.sub("_", os.path.basename(raw_mp_name))
+            if not filename:
+                filename = "input.glb"
 
             # Merge form text fields into params (query string takes precedence)
             for k, v in parts.items():
