@@ -147,24 +147,27 @@ class OptimizeHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/":
-            self._respond_json(HTTPStatus.OK, {
-                "service": "notso-glb",
-                "endpoints": {
-                    "POST /optimize": "Upload a 3D file for optimization",
-                    "GET /health": "Health check",
+            self._respond_json(
+                HTTPStatus.OK,
+                {
+                    "service": "notso-glb",
+                    "endpoints": {
+                        "POST /optimize": "Upload a 3D file for optimization",
+                        "GET /health": "Health check",
+                    },
+                    "parameters": {
+                        "format": "glb | gltf | gltf-embedded (default: glb)",
+                        "draco": "true | false (default: true)",
+                        "webp": "true | false (default: true)",
+                        "gltfpack": "true | false (default: true)",
+                        "max_texture_size": "int pixels (default: 1024, 0=no resize)",
+                        "force_pot": "true | false (default: false)",
+                        "analyze_animations": "true | false (default: true)",
+                        "check_bloat": "true | false (default: true)",
+                        "autofix": "true | false (default: false)",
+                    },
                 },
-                "parameters": {
-                    "format": "glb | gltf | gltf-embedded (default: glb)",
-                    "draco": "true | false (default: true)",
-                    "webp": "true | false (default: true)",
-                    "gltfpack": "true | false (default: true)",
-                    "max_texture_size": "int pixels (default: 1024, 0=no resize)",
-                    "force_pot": "true | false (default: false)",
-                    "analyze_animations": "true | false (default: true)",
-                    "check_bloat": "true | false (default: true)",
-                    "autofix": "true | false (default: false)",
-                },
-            })
+            )
             return
 
         self._respond_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
@@ -182,9 +185,7 @@ class OptimizeHandler(BaseHTTPRequestHandler):
         content_length = int(self.headers.get("Content-Length", 0))
 
         if content_length == 0:
-            self._respond_json(
-                HTTPStatus.BAD_REQUEST, {"error": "Empty request body"}
-            )
+            self._respond_json(HTTPStatus.BAD_REQUEST, {"error": "Empty request body"})
             return
 
         body = self.rfile.read(content_length)

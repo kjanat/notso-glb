@@ -19,31 +19,31 @@
 #
 # # Optimize a GLB file (multipart upload)
 # curl -X POST http://localhost:8080/optimize \
-#   -F "file=@model.glb" \
-#   -o optimized.glb
+# -F "file=@model.glb" \
+# -o optimized.glb
 #
 # # With options (query params)
 # curl -X POST "http://localhost:8080/optimize?draco=false&max_texture_size=512" \
-#   -F "file=@model.glb" \
-#   -o optimized.glb
+# -F "file=@model.glb" \
+# -o optimized.glb
 #
 # # Raw binary upload
 # curl -X POST http://localhost:8080/optimize \
-#   -H "Content-Type: application/octet-stream" \
-#   -H "X-Filename: model.glb" \
-#   --data-binary @model.glb \
-#   -o optimized.glb
+# -H "Content-Type: application/octet-stream" \
+# -H "X-Filename: model.glb" \
+# --data-binary @model.glb \
+# -o optimized.glb
 # ```
 #
 # Cloudflare Containers configuration (wrangler.jsonc):
 # ```jsonc
 # {
-#   "containers": [{
-#     "class_name": "NotsoGlb",
-#     "image": "./Dockerfile.http",
-#     "max_instances": 5,
-#     "defaultPort": 8080
-#   }]
+# "containers": [{
+# "class_name": "NotsoGlb",
+# "image": "./Dockerfile.http",
+# "max_instances": 5,
+# "defaultPort": 8080
+# }]
 # }
 # ```
 #
