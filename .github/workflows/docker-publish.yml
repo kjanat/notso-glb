@@ -59,7 +59,7 @@ jobs:
             echo "is_release=false"           >> "$GITHUB_OUTPUT"
             echo "Building nightly image from source"
 
-          # --- Tag push (v1.2.3) – build from source immediately ---
+          # --- Tag push (v1.2.3 or v1.2.3-rc.1) – build from source immediately ---
           elif [[ "${EVENT}" == "push" ]]; then
             TAG="${GITHUB_REF_NAME}"
             VERSION="${TAG#v}"
@@ -67,11 +67,19 @@ jobs:
             MINOR="${VERSION#*.}"; MINOR="${MINOR%%.*}"
             echo "dockerfile=Dockerfile.dev"  >> "$GITHUB_OUTPUT"
             echo "is_nightly=false"           >> "$GITHUB_OUTPUT"
-            echo "is_release=true"            >> "$GITHUB_OUTPUT"
             echo "version=${VERSION}"         >> "$GITHUB_OUTPUT"
             echo "major=${MAJOR}"             >> "$GITHUB_OUTPUT"
             echo "minor=${MINOR}"             >> "$GITHUB_OUTPUT"
-            echo "Building release ${VERSION} from source (tag push)"
+            # Prerelease tags (contain hyphen, e.g. 1.2.3-rc.1) must not promote to latest
+            if [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "is_release=true"          >> "$GITHUB_OUTPUT"
+              echo "is_prerelease=false"      >> "$GITHUB_OUTPUT"
+              echo "Building release ${VERSION} from source (tag push)"
+            else
+              echo "is_release=false"         >> "$GITHUB_OUTPUT"
+              echo "is_prerelease=true"       >> "$GITHUB_OUTPUT"
+              echo "Building prerelease ${VERSION} from source (tag push)"
+            fi
 
           # --- After PyPI publish – rebuild from PyPI ---
           elif [[ "${EVENT}" == "workflow_run" ]]; then
@@ -122,7 +130,7 @@ jobs:
             docker.io/${{ github.repository }}
             ghcr.io/${{ github.repository }}
           tags: |
-            # --- Semver tags from git tag push (v1.2.3 → 1.2.3, 1.2, 1, latest) ---
+            # --- Semver tags from git tag push (v1.2.3 → 1.2.3, 1.2, 1) ---
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -130,7 +138,9 @@ jobs:
             type=raw,value=${{ steps.params.outputs.version }},enable=${{ github.event_name == 'workflow_run' && steps.params.outputs.version != '' }}
             type=raw,value=${{ steps.params.outputs.major }}.${{ steps.params.outputs.minor }},enable=${{ github.event_name == 'workflow_run' && steps.params.outputs.version != '' }}
             type=raw,value=${{ steps.params.outputs.major }},enable=${{ github.event_name == 'workflow_run' && steps.params.outputs.version != '' }}
-            # --- latest tag for any release build ---
+            # --- Prerelease tag (v1.2.3-rc.1 → 1.2.3-rc.1 only, no latest/short aliases) ---
+            type=raw,value=${{ steps.params.outputs.version }},enable=${{ steps.params.outputs.is_prerelease == 'true' }}
+            # --- latest tag for stable releases only (not prereleases or nightlies) ---
             type=raw,value=latest,enable=${{ steps.params.outputs.is_release == 'true' }}
             # --- Nightly tags ---
             type=schedule,pattern=nightly
@@ -145,7 +155,7 @@ jobs:
           file: ./${{ steps.params.outputs.dockerfile }}
           push: true
           build-args: |
-            NOTSO_GLB_VERSION=${{ steps.params.outputs.spec }}
+            ${{ steps.params.outputs.spec != '' && format('NOTSO_GLB_VERSION={0}', steps.params.outputs.spec) || '' }}
           # Single arch only, gltfpack binary is not available for arm64,
           # and configuring conditional inclusion of the binary I aint got no time for.
           platforms: linux/amd64
