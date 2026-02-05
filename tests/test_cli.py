@@ -1,5 +1,7 @@
 """Tests for CLI module."""
 
+from unittest.mock import MagicMock, patch
+
 from typer.testing import CliRunner
 
 from notso_glb.cli import app
@@ -71,3 +73,85 @@ class TestCLIOptions:
         """Quiet option should be documented."""
         result = runner.invoke(app, ["--help"])
         assert "--quiet" in result.output or "-q" in result.output
+
+    def test_gltfpack_option_in_help(self) -> None:
+        """Gltfpack option should be documented."""
+        result = runner.invoke(app, ["--help"])
+        assert "--gltfpack" in result.output or "gltfpack" in result.output.lower()
+
+
+class TestDracoGltfpackInteraction:
+    """Tests for Draco/gltfpack interaction to prevent hangs."""
+
+    @patch("notso_glb.exporters.optimize_and_export")
+    def test_draco_disabled_when_gltfpack_enabled(
+        self, mock_export: MagicMock, tmp_path: object
+    ) -> None:
+        """Draco should be disabled at export when gltfpack is enabled."""
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as f:
+            # Write minimal GLB header so the file exists
+            f.write(b"\x00" * 20)
+            f.flush()
+
+            mock_export.return_value = None  # simulate export failure to skip gltfpack
+
+            runner.invoke(app, [f.name, "--draco", "--gltfpack"])
+
+        # The export should have been called with use_draco=False
+        mock_export.assert_called_once()
+        assert mock_export.call_args.kwargs["use_draco"] is False
+
+    @patch("notso_glb.exporters.optimize_and_export")
+    def test_draco_kept_when_gltfpack_disabled(
+        self, mock_export: MagicMock, tmp_path: object
+    ) -> None:
+        """Draco should remain enabled when gltfpack is disabled."""
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as f:
+            f.write(b"\x00" * 20)
+            f.flush()
+
+            mock_export.return_value = None
+
+            runner.invoke(app, [f.name, "--draco", "--no-gltfpack"])
+
+        mock_export.assert_called_once()
+        assert mock_export.call_args.kwargs["use_draco"] is True
+
+    @patch("notso_glb.exporters.optimize_and_export")
+    def test_draco_disabled_message_shown(
+        self, mock_export: MagicMock, tmp_path: object
+    ) -> None:
+        """User should be informed when Draco is auto-disabled for gltfpack."""
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as f:
+            f.write(b"\x00" * 20)
+            f.flush()
+
+            mock_export.return_value = None
+
+            result = runner.invoke(app, [f.name, "--draco", "--gltfpack"])
+
+        assert "draco disabled" in result.output.lower()
+
+    @patch("notso_glb.exporters.optimize_and_export")
+    def test_no_draco_message_when_draco_already_off(
+        self, mock_export: MagicMock, tmp_path: object
+    ) -> None:
+        """No Draco-disabled message when user already passed --no-draco."""
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as f:
+            f.write(b"\x00" * 20)
+            f.flush()
+
+            mock_export.return_value = None
+
+            result = runner.invoke(app, [f.name, "--no-draco", "--gltfpack"])
+
+        # Should NOT show the "Draco disabled" message since user already disabled it
+        assert "draco disabled" not in result.output.lower()
