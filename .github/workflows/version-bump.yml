@@ -32,7 +32,7 @@ jobs:
       - name: Determine previous tag
         id: prev_tag
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          PREV_TAG=$(git describe --tags --abbrev=0 --match "v[0-9]*" 2>/dev/null || echo "")
           echo "tag=${PREV_TAG}" >> "$GITHUB_OUTPUT"
           if [[ -n "${PREV_TAG}" ]]; then
             echo "Found previous tag: ${PREV_TAG}"
