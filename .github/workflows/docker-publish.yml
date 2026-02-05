@@ -2,21 +2,16 @@
 ---
 name: Publish Docker image
 on:
-  push:
-    tags: ["v*.*.*"]
+  push: { tags: ["v*.*.*"] }
   workflow_dispatch:
     inputs:
       build_type:
         description: "Build type (release: from PyPI, nightly: from source)"
         required: false
-        default: "release"
+        default: release
         type: choice
-        options:
-          - release
-          - nightly
-  schedule:
-    # Nightly build at 2:00 AM UTC
-    - cron: "0 2 * * *"
+        options: [release, nightly]
+  schedule: [cron: "0 2 * * *"] # Nightly build at 2:00 AM UTC
   workflow_run: { workflows: [Publish to PyPI], types: [completed] }
 
 defaults: { run: { shell: bash } }
@@ -48,15 +43,15 @@ jobs:
 
       - name: Determine build parameters
         id: params
+        env: { BUILD_TYPE: "${{ github.event.inputs.build_type }}", EVENT: "${{ github.event_name }}" }
         run: |
-          EVENT="${{ github.event_name }}"
-          BUILD_TYPE="${{ github.event.inputs.build_type }}"
-
           # --- Nightly / dev builds (schedule or manual nightly) ---
           if [[ "${EVENT}" == "schedule" ]] || [[ "${EVENT}" == "workflow_dispatch" && "${BUILD_TYPE}" == "nightly" ]]; then
-            echo "dockerfile=Dockerfile.dev"  >> "$GITHUB_OUTPUT"
-            echo "is_nightly=true"            >> "$GITHUB_OUTPUT"
-            echo "is_release=false"           >> "$GITHUB_OUTPUT"
+            {
+              echo "dockerfile=Dockerfile.dev"
+              echo "is_nightly=true"
+              echo "is_release=false"
+            } >> "$GITHUB_OUTPUT"
             echo "Building nightly image from source"
 
           # --- Tag push (v1.2.3 or v1.2.3-rc.1) – build from source immediately ---
@@ -65,19 +60,25 @@ jobs:
             VERSION="${TAG#v}"
             MAJOR="${VERSION%%.*}"
             MINOR="${VERSION#*.}"; MINOR="${MINOR%%.*}"
-            echo "dockerfile=Dockerfile.dev"  >> "$GITHUB_OUTPUT"
-            echo "is_nightly=false"           >> "$GITHUB_OUTPUT"
-            echo "version=${VERSION}"         >> "$GITHUB_OUTPUT"
-            echo "major=${MAJOR}"             >> "$GITHUB_OUTPUT"
-            echo "minor=${MINOR}"             >> "$GITHUB_OUTPUT"
+            {
+              echo "dockerfile=Dockerfile.dev"
+              echo "is_nightly=false"
+              echo "version=${VERSION}"
+              echo "major=${MAJOR}"
+              echo "minor=${MINOR}"
+            } >> "$GITHUB_OUTPUT"
             # Prerelease tags (contain hyphen, e.g. 1.2.3-rc.1) must not promote to latest
             if [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              echo "is_release=true"          >> "$GITHUB_OUTPUT"
-              echo "is_prerelease=false"      >> "$GITHUB_OUTPUT"
+              {
+                echo "is_release=true"
+                echo "is_prerelease=false"
+              } >> "$GITHUB_OUTPUT"
               echo "Building release ${VERSION} from source (tag push)"
             else
-              echo "is_release=false"         >> "$GITHUB_OUTPUT"
-              echo "is_prerelease=true"       >> "$GITHUB_OUTPUT"
+              {
+                echo "is_release=false"
+                echo "is_prerelease=true"
+              } >> "$GITHUB_OUTPUT"
               echo "Building prerelease ${VERSION} from source (tag push)"
             fi
 
@@ -87,28 +88,34 @@ jobs:
               VERSION=$(cat version.txt | tr -d '[:space:]')
               MAJOR="${VERSION%%.*}"
               MINOR="${VERSION#*.}"; MINOR="${MINOR%%.*}"
-              echo "dockerfile=Dockerfile"              >> "$GITHUB_OUTPUT"
-              echo "is_nightly=false"                   >> "$GITHUB_OUTPUT"
-              echo "is_release=true"                    >> "$GITHUB_OUTPUT"
-              echo "version=${VERSION}"                 >> "$GITHUB_OUTPUT"
-              echo "major=${MAJOR}"                     >> "$GITHUB_OUTPUT"
-              echo "minor=${MINOR}"                     >> "$GITHUB_OUTPUT"
-              echo "spec=notso-glb==${VERSION}"         >> "$GITHUB_OUTPUT"
+              {
+                echo "dockerfile=Dockerfile"
+                echo "is_nightly=false"
+                echo "is_release=true"
+                echo "version=${VERSION}"
+                echo "major=${MAJOR}"
+                echo "minor=${MINOR}"
+                echo "spec=notso-glb==${VERSION}"
+              } >> "$GITHUB_OUTPUT"
               echo "Building release ${VERSION} from PyPI"
             else
-              echo "dockerfile=Dockerfile"    >> "$GITHUB_OUTPUT"
-              echo "is_nightly=false"         >> "$GITHUB_OUTPUT"
-              echo "is_release=true"          >> "$GITHUB_OUTPUT"
-              echo "spec=notso-glb"           >> "$GITHUB_OUTPUT"
+              {
+                echo "dockerfile=Dockerfile"
+                echo "is_nightly=false"
+                echo "is_release=true"
+                echo "spec=notso-glb"
+              } >> "$GITHUB_OUTPUT"
               echo "::warning::version.txt not found, defaulting to latest notso-glb"
             fi
 
           # --- Manual release dispatch (latest from PyPI) ---
           else
-            echo "dockerfile=Dockerfile"      >> "$GITHUB_OUTPUT"
-            echo "is_nightly=false"           >> "$GITHUB_OUTPUT"
-            echo "is_release=true"            >> "$GITHUB_OUTPUT"
-            echo "spec=notso-glb"             >> "$GITHUB_OUTPUT"
+            {
+              echo "dockerfile=Dockerfile"
+              echo "is_nightly=false"
+              echo "is_release=true"
+              echo "spec=notso-glb"
+            } >> "$GITHUB_OUTPUT"
             echo "Building latest release from PyPI"
           fi
 

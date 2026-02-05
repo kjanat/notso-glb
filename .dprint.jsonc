@@ -10,7 +10,7 @@
   "jupyter": {},
   "malva": {},
   "markup": {},
-  "yaml": { "printWidth": 140 },
+  "yaml": { "printWidth": 160 },
   "exec": {
     "cwd": "${configDir}",
     "commands": [
