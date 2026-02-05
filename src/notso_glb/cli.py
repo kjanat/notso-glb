@@ -196,11 +196,32 @@ def optimize(
     else:
         final_output_path = output.resolve()
 
+    # gltfpack cannot parse Draco-compressed files, so disable Draco at the
+    # export stage when gltfpack post-processing is available.  gltfpack's own
+    # -cc flag will handle mesh compression instead.
+    # Check availability early so we only disable Draco when gltfpack will
+    # actually run (not when user passed --gltfpack but no backend exists).
+    export_draco = use_draco
+    gltfpack_available = False
+    if use_gltfpack:
+        from notso_glb.wasm import is_available as wasm_available
+
+        native_available = find_gltfpack() is not None
+        wasm_ok = wasm_available()
+        gltfpack_available = native_available or wasm_ok
+
+        if gltfpack_available and use_draco:
+            console.print(
+                "[bold yellow][WARN][/] Draco disabled for export "
+                "(gltfpack will handle mesh compression)"
+            )
+            export_draco = False
+
     # Run optimization
     result = optimize_and_export(
         output_path=final_output_path,
         export_format=blender_export_format,
-        use_draco=use_draco,
+        use_draco=export_draco,
         use_webp=use_webp,
         max_texture_size=max_texture_size,
         force_pot_textures=force_pot,
@@ -216,15 +237,10 @@ def optimize(
 
     # Post-process with gltfpack if enabled
     if use_gltfpack:
-        from notso_glb.utils.draco import has_draco_compression
         from notso_glb.utils.gltfpack import run_gltfpack
         from notso_glb.utils.logging import format_bytes
-        from notso_glb.wasm import is_available as wasm_available
 
-        native_available = find_gltfpack() is not None
-        wasm_ok = wasm_available()
-
-        if not native_available and not wasm_ok:
+        if not gltfpack_available:
             console.print(
                 "[bold yellow][WARN][/] gltfpack not found and WASM unavailable, skipping"
             )
@@ -233,22 +249,13 @@ def optimize(
             console.print(f"\n[bold cyan]Running gltfpack ({backend})...[/]")
             original_size = Path(result).stat().st_size
 
-            # Auto-detect Draco compression in the result file
-            # gltfpack cannot process Draco-compressed input, so disable mesh_compress
-            # This also prevents double Draco compression
-            gltfpack_mesh_compress = True
-            if has_draco_compression(result):
-                console.print(
-                    "  [yellow]Draco compression detected, "
-                    "disabling gltfpack mesh compression (--no-draco)[/]"
-                )
-                gltfpack_mesh_compress = False
-
+            # Draco is already disabled at export time when gltfpack is
+            # available (see above), so mesh_compress=True is always safe.
             success, packed_path, msg = run_gltfpack(
                 Path(result),
                 output_path=Path(result),  # Overwrite original
                 texture_compress=True,
-                mesh_compress=gltfpack_mesh_compress,
+                mesh_compress=True,
             )
 
             if success:
