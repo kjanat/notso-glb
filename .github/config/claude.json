@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(just *)",
+      "Bash(uv run pytest*)",
+      "Bash(uv run ruff*)",
+      "Bash(uv run ty*)",
+      "Bash(uv sync*)",
+      "Bash(dprint *)",
+      "Bash(shfmt *)",
+      "Bash(gh pr *)",
+      "Bash(gh issue *)",
+      "Bash(gh api *)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git status*)",
+      "Bash(git branch*)",
+      "Bash(git checkout*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(python *)",
+      "Bash(ls *)",
+      "Edit",
+      "Write",
+      "NotebookEdit"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(wget *)"
+    ]
+  }
+}

@@ -10,6 +10,7 @@ inputs:
   python-version:
     description: "The version of Python to set UV_PYTHON to"
     required: false
+    default: "3.11"
   version-file:
     description: "Path to a file containing the version of uv to install. Defaults to searching for uv.toml and if not found pyproject.toml."
     default: ""

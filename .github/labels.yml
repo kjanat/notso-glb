@@ -53,6 +53,19 @@ labels:
     color: "#0e8a16"
     description: Low priority issue
 
+  # Claude labels
+  - name: claude
+    color: "#d4a27f"
+    description: Trigger Claude Code on this issue
+
+  - name: "claude: approved"
+    color: "#0e8a16"
+    description: Reviewed and approved by Claude
+
+  - name: "claude: needs-attention"
+    color: "#d93f0b"
+    description: Claude could not fully resolve — needs human review
+
   # Status labels
   - name: "status: blocked"
     color: "#000000"
