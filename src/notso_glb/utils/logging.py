@@ -6,9 +6,11 @@ import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import Final, final
 
 
 # ANSI color codes
+@final
 class Colors:
     """ANSI escape codes for terminal colors."""
 
@@ -241,12 +243,13 @@ def timed(description: str, print_on_exit: bool = True) -> Iterator[TimingResult
             log_timing(description, result.elapsed)
 
 
+@final
 class StepTimer:
     """Track timing for multiple steps in a pipeline."""
 
     def __init__(self, total_steps: int) -> None:
-        self.total = total_steps
-        self.current = 0
+        self.total: Final[int] = total_steps
+        self.current: int = 0
         self.timings: list[tuple[str, float]] = []
         self._step_start: float = 0.0
         self._total_start: float = time.perf_counter()
@@ -372,8 +375,8 @@ def filter_blender_output() -> Iterator[None]:
         sys.stderr.flush()
 
         # Redirect file descriptors to temp files
-        os.dup2(stdout_tmp.fileno(), stdout_fd)
-        os.dup2(stderr_tmp.fileno(), stderr_fd)
+        _ = os.dup2(stdout_tmp.fileno(), stdout_fd)
+        _ = os.dup2(stderr_tmp.fileno(), stderr_fd)
         yield
     finally:
         # Flush ALL C-level stdio buffers (captures DracoDecoder subprocess output)
@@ -394,14 +397,14 @@ def filter_blender_output() -> Iterator[None]:
         os.fsync(stderr_fd)
 
         # Restore original file descriptors
-        os.dup2(saved_stdout_fd, stdout_fd)
-        os.dup2(saved_stderr_fd, stderr_fd)
+        _ = os.dup2(saved_stdout_fd, stdout_fd)
+        _ = os.dup2(saved_stderr_fd, stderr_fd)
         os.close(saved_stdout_fd)
         os.close(saved_stderr_fd)
 
         # Read and process captured output
-        stdout_tmp.seek(0)
-        stderr_tmp.seek(0)
+        _ = stdout_tmp.seek(0)
+        _ = stderr_tmp.seek(0)
         _process_blender_output(stdout_tmp.read())
         _process_blender_output(stderr_tmp.read())
 

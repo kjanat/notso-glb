@@ -18,7 +18,7 @@ classifiers     = [
   "Topic :: Multimedia :: Graphics :: Graphics Conversion"
 ]
 dependencies    = [
-  "bpy>=5,<6; python_version ~= '3.11.0'",
+  "bpy>=5,<6",                                                                                                 # ; python_version == '3.11'
   "rich>=14.2.0",
   "typer>=0.20.1",
   "wasmtime>=41.0.0",
@@ -38,19 +38,9 @@ dev   = [
   { include-group = "test" },
   { include-group = "types" },
 ]
-lint  = [
-  "ruff>=0.14.10",
-  "tombi>=0.7.26",
-  "ty>=0.0.5",
-]
-test  = [
-  "pytest>=9.0.2",
-  "pytest-cov>=7.0.0",
-]
-types = [
-  "fake-bpy-module-5-0>=20260128",
-  "ty>=0.0.5",
-]
+lint  = ["basedpyright>=1.37.4", "ruff>=0.14.10", "tombi>=0.7.26", "ty>=0.0.5"]
+test  = ["pytest>=9.0.2", "pytest-cov>=7.0.0"]
+types = ["fake-bpy-module-5-0>=20260128", "ty>=0.0.5"]
 
 [build-system]
 requires      = ["uv_build>=0.9.18,<0.10.0"]
@@ -84,7 +74,26 @@ docstring-code-format      = true
 docstring-code-line-length = "dynamic"
 
 [tool.uv]
-default-groups = "all"
+default-groups        = "all"
+compile-bytecode      = true
+extra-build-variables = { bpy = { UV_PYTHON = "3.11" } }
+trusted-publishing    = "always"
 
 [tool.uv.build-backend]
 source-include = ["src/notso_glb/wasm/**"]
+
+[tool.uv.sources.bpy]
+index = "blender"
+
+[tool.uv.pip]
+compile-bytecode = true
+
+[[tool.uv.dependency-metadata]]
+name            = "bpy"
+version         = "5"
+requires-python = "==3.11.*"
+
+[[tool.uv.index]]
+name     = "blender"
+url      = "https://download.blender.org/pypi"
+explicit = true

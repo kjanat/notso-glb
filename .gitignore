@@ -28,3 +28,4 @@ src/notso_glb/wasm/gltfpack.wasm
 
 # Shell scripts not to be included
 test_convert.sh
+node_modules/

@@ -172,7 +172,7 @@ def _analyze_bloat(step: StepTimer, config: ExportConfig) -> None:
     print(f"{bright_yellow(border) if critical_count == 0 else bright_red(border)}\n")
 
 
-def _run_bloat_autofix(bloat_warnings: list[dict]) -> None:
+def _run_bloat_autofix(bloat_warnings: list[dict[str, object]]) -> None:
     """Run experimental autofix for bloat warnings."""
     print(f"\n  {magenta('[EXPERIMENTAL]')} Running auto-fix pipeline...")
 
@@ -207,9 +207,7 @@ def _run_bloat_autofix(bloat_warnings: list[dict]) -> None:
         for fix in results["decimation"]:
             reduction_str = bright_green(f"-{fix['reduction']:.0f}%")
             print(
-                f"    {fix['object']}: "
-                f"{fix['original']:,} -> {fix['new']:,} verts "
-                f"({reduction_str})"
+                f"    {fix['object']}: {fix['original']:,} -> {fix['new']:,} verts ({reduction_str})"
             )
         print(f"  {bold('Decimated')} {len(results['decimation'])} mesh(es)")
     else:
@@ -285,15 +283,13 @@ def _check_skinned_meshes(step: StepTimer) -> None:
     border = "~" * 60
     print(f"\n{cyan(border)}")
     print(
-        f"  {cyan('SKINNED MESH WARNINGS')}: "
-        f"{bright_red(str(len(critical)))} critical, "
-        f"{dim(str(len(info_only)))} info"
+        f"  {cyan('SKINNED MESH WARNINGS')}: {bright_red(str(len(critical)))} critical, {dim(str(len(info_only)))} info"
     )
     print(f"{cyan(border)}")
     print(f"  {dim('(Parent transforms do not affect skinned meshes in glTF)')}")
 
     # Group by parent
-    by_parent: dict[str, list[dict]] = {}
+    by_parent: dict[str, list[dict[str, object]]] = {}
     for w in skinned_warnings:
         parent = str(w["parent"])
         if parent not in by_parent:
@@ -439,7 +435,7 @@ def _clean_and_optimize(step: StepTimer, config: ExportConfig) -> None:
 
 def _do_export(output_path: str, config: ExportConfig, use_draco: bool) -> None:
     """Execute the actual glTF export call."""
-    export_params: dict[str, Any] = {
+    export_params: dict[str, Any] = {  # pyright: ignore[reportExplicitAny]
         "filepath": output_path,
         "export_format": config.export_format,
         # Bones: deform only
@@ -475,7 +471,7 @@ def _do_export(output_path: str, config: ExportConfig, use_draco: bool) -> None:
     if bpy.app.version >= (5, 0, 0):
         export_params["export_loglevel"] = -1
 
-    bpy.ops.export_scene.gltf(**export_params)  # pyright: ignore[reportCallIssue]
+    bpy.ops.export_scene.gltf(**export_params)
 
 
 def _try_export(output_path: str, config: ExportConfig, use_draco: bool) -> str | None:
@@ -607,10 +603,7 @@ def optimize_and_export(
     stats = get_scene_stats()
     verts_str = f"{stats['vertices']:,}"
     print(
-        f"\n  Scene: {cyan(str(stats['meshes']))} meshes, "
-        f"{cyan(verts_str)} verts, "
-        f"{cyan(str(stats['bones']))} bones, "
-        f"{cyan(str(stats['actions']))} animations"
+        f"\n  Scene: {cyan(str(stats['meshes']))} meshes, {cyan(verts_str)} verts, {cyan(str(stats['bones']))} bones, {cyan(str(stats['actions']))} animations"
     )
 
     _analyze_bloat(step, config)

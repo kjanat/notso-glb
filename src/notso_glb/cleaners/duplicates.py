@@ -3,17 +3,22 @@
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import bpy
+
+if TYPE_CHECKING:
+    from bpy.types import ID
 
 # Type alias for rename result
 RenameRecord = dict[str, str]
 
 
-def _get_collection(dtype: str) -> Any | None:
+def _get_collection(
+    dtype: str,
+) -> Any | None:  # pyright: ignore[reportExplicitAny]
     """Get the appropriate bpy.data collection for a data type."""
-    collections = {
+    collections: dict[str, Any] = {  # pyright: ignore[reportExplicitAny]
         "OBJECT": bpy.data.objects,
         "MESH": bpy.data.meshes,
         "MATERIAL": bpy.data.materials,
@@ -22,7 +27,7 @@ def _get_collection(dtype: str) -> Any | None:
     return collections.get(dtype)
 
 
-def _get_ptr_suffix(item: Any) -> str:
+def _get_ptr_suffix(item: ID) -> str:
     """Get short unique suffix from memory pointer (last 4 hex digits)."""
     return format(item.as_pointer() & 0xFFFF, "04x")
 
@@ -37,7 +42,7 @@ def _parse_colliding_names(name_field: str) -> list[str]:
 
 
 def _fix_exact_duplicates(
-    collection: Any,
+    collection: Any,  # pyright: ignore[reportExplicitAny]
     name: str,
     dtype: str,
     processed_ids: set[int],
@@ -56,7 +61,7 @@ def _fix_exact_duplicates(
 
 
 def _fix_sanitization_collision(
-    collection: Any,
+    collection: Any,  # pyright: ignore[reportExplicitAny]
     name_field: str,
     dtype: str,
     processed_ids: set[int],

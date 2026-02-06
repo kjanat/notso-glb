@@ -9,7 +9,7 @@ from .wasi import WasiExit
 from .wasi import WasiFilesystem
 
 
-def _get_wasm_path() -> Path:
+def get_wasm_path() -> Path:
     """Get path to bundled gltfpack.wasm."""
     return Path(__file__).parent / "gltfpack.wasm"
 
@@ -61,7 +61,7 @@ class GltfpackWasm(WasiFilesystem):
 
         engine = Engine()
         self._store = Store(engine)
-        wasm_bytes = _get_wasm_path().read_bytes()
+        wasm_bytes = get_wasm_path().read_bytes()
         module = Module(engine, wasm_bytes)
 
         linker = Linker(engine)

@@ -44,7 +44,7 @@ def clean_docs(content: str) -> str:
     # that appear outside of backticks in option descriptions
     def escape_brackets_outside_backticks(line: str) -> str:
         """Escape [] outside of backtick-quoted sections."""
-        result = []
+        result: list[str] = []
         in_backticks = False
         i = 0
         while i < len(line):
@@ -62,7 +62,7 @@ def clean_docs(content: str) -> str:
     # Process lines, but skip code blocks
     lines = content.split("\n")
     in_code_block = False
-    processed_lines = []
+    processed_lines: list[str] = []
     for line in lines:
         if line.startswith("```"):
             in_code_block = not in_code_block
@@ -103,14 +103,14 @@ def main() -> None:
     clean_content = clean_docs(raw_docs)
 
     # Write output
-    output_path.write_text(clean_content)
+    _ = output_path.write_text(clean_content)
     print(f"Docs saved to: {output_path}")
 
     # Format with dprint if available
     dprint = shutil.which("dprint")
     if dprint:
         print("Formatting with dprint...")
-        subprocess.run([dprint, "fmt", str(output_path)], check=True)
+        _ = subprocess.run([dprint, "fmt", str(output_path)], check=True)
     else:
         print("dprint not found, skipping formatting")
 

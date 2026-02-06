@@ -1,10 +1,15 @@
 """Duplicate name detection for glTF export issues."""
 
 from collections import Counter, defaultdict
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 import bpy
 
 from notso_glb.utils import sanitize_gltf_name
+
+if TYPE_CHECKING:
+    from bpy.types import ID
 
 
 def analyze_duplicate_names() -> list[dict[str, object]]:
@@ -19,7 +24,7 @@ def analyze_duplicate_names() -> list[dict[str, object]]:
     """
     duplicates: list[dict[str, object]] = []
 
-    def check_collection(items, type_name: str) -> None:
+    def check_collection(items: Iterable["ID"], type_name: str) -> None:
         """Check a collection for exact and sanitized duplicates."""
         names = [item.name for item in items]
 

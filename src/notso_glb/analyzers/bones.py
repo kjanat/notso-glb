@@ -1,10 +1,15 @@
 """Bone animation analysis for detecting static bones."""
 
+from typing import TYPE_CHECKING
+
 import bpy
 from bpy.types import Object
 
 from notso_glb.utils import get_scene, get_view_layer
 from notso_glb.utils.logging import log_debug
+
+if TYPE_CHECKING:
+    from mathutils import Euler, Quaternion, Vector
 
 
 def get_bones_used_for_skinning() -> set[str]:
@@ -63,7 +68,7 @@ def analyze_bone_animation() -> set[str]:
         # Evaluate start frame ONCE for all bones
         scene.frame_set(frame_start)
         view_layer.update()
-        start_poses: dict[str, tuple] = {}
+        start_poses: dict[str, tuple[Vector, Quaternion, Euler, str]] = {}
         for bone in armature.pose.bones:
             start_poses[bone.name] = (
                 bone.location.copy(),

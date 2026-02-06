@@ -109,6 +109,7 @@ class TestGetSceneStats:
 
     def test_scene_with_meshes(self, cube_mesh: Object) -> None:
         """Scene with meshes should count correctly."""
+        _ = cube_mesh  # Fixture creates mesh in scene
         from notso_glb.utils import get_scene_stats
 
         stats = get_scene_stats()
@@ -117,6 +118,7 @@ class TestGetSceneStats:
 
     def test_scene_with_armature(self, armature_with_bones: Object) -> None:
         """Scene with armature should count bones."""
+        _ = armature_with_bones  # Fixture creates armature in scene
         from notso_glb.utils import get_scene_stats
 
         stats = get_scene_stats()

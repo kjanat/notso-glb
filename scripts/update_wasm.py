@@ -31,7 +31,7 @@ BUNDLE_PATH = (
 VERSION_PATH = BUNDLE_PATH.with_suffix(".version")
 
 
-def get_npm_info() -> dict[str, Any]:
+def get_npm_info() -> dict[str, Any]:  # pyright: ignore[reportExplicitAny]
     """Fetch full npm package info."""
     with urllib.request.urlopen(NPM_REGISTRY_URL, timeout=30) as resp:
         return json.loads(resp.read().decode("utf-8"))
@@ -120,8 +120,8 @@ def update_bundle(target_version: str | None = None) -> tuple[bool, str]:
 
     # Update bundle
     BUNDLE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    BUNDLE_PATH.write_bytes(wasm_data)
-    VERSION_PATH.write_text(f"{version}\n")
+    _ = BUNDLE_PATH.write_bytes(wasm_data)
+    _ = VERSION_PATH.write_text(f"{version}\n")
 
     size_kb = len(wasm_data) / 1024
     msg = f"Updated: {current_version or 'unknown'} -> {version} ({size_kb:.1f} KB)"
