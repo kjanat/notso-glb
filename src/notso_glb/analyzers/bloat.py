@@ -1,17 +1,18 @@
 """Mesh bloat analysis for detecting overly complex geometry."""
 
 import bpy
+from bpy.types import Object
 
 from notso_glb.utils import get_mesh_data
 from notso_glb.utils.constants import BLOAT_THRESHOLDS
 
 
-def count_mesh_islands(obj) -> int:
+def count_mesh_islands(obj: Object) -> int:
     """Count disconnected mesh parts (islands) using BFS."""
     import bmesh
 
     bm = bmesh.new()
-    bm.from_mesh(obj.data)
+    bm.from_mesh(get_mesh_data(obj))
     bm.verts.ensure_lookup_table()
 
     visited: set[int] = set()

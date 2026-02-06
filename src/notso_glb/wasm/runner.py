@@ -102,18 +102,25 @@ def run_gltfpack_wasm(
     Returns:
         Tuple of (success, output_path, message)
     """
-    from . import get_wasm_path, is_available
+    from .runtime import get_wasm_path
 
     input_path = Path(input_path)
 
-    if not is_available():
-        wasm_path = get_wasm_path()
+    # Check WASM availability inline to avoid circular import
+    wasm_path = get_wasm_path()
+    try:
+        import wasmtime  # noqa: F401
+
+        wasm_available = wasm_path.exists()
+    except ImportError:
+        wasm_available = False
+
+    if not wasm_available:
         if not wasm_path.exists():
             return (
                 False,
                 input_path,
-                f"WASM file not found at {wasm_path}. "
-                "Run: uv run scripts/update_wasm.py",
+                f"WASM file not found at {wasm_path}. Run: uv run scripts/update_wasm.py",
             )
         return False, input_path, "WASM runtime not available (wasmtime not installed)"
 

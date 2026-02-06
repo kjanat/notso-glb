@@ -157,6 +157,7 @@ def optimize(
     """
     Optimize and export 3D models for the web.
     """
+    _ = version  # Used via callback
     # Verify input existence before expensive imports
     abs_input_path = os.path.abspath(input_path)
     if not os.path.isfile(abs_input_path):
@@ -249,8 +250,16 @@ def optimize(
             console.print(f"\n[bold cyan]Running gltfpack ({backend})...[/]")
             original_size = Path(result).stat().st_size
 
-            # Draco is already disabled at export time when gltfpack is
-            # available (see above), so mesh_compress=True is always safe.
+            # Auto-detect Draco compression in the result file
+            # gltfpack cannot process Draco-compressed input, so disable mesh_compress
+            # This also prevents double Draco compression
+            gltfpack_mesh_compress = True
+            if has_draco_compression(result):
+                console.print(
+                    "  [yellow]Draco compression detected, disabling gltfpack mesh compression (--no-draco)[/]"
+                )
+                gltfpack_mesh_compress = False
+
             success, packed_path, msg = run_gltfpack(
                 Path(result),
                 output_path=Path(result),  # Overwrite original
@@ -265,8 +274,7 @@ def optimize(
                 else:
                     reduction = ((original_size - new_size) / original_size) * 100
                 console.print(
-                    f"  [green]gltfpack:[/] {format_bytes(original_size)} -> "
-                    f"{format_bytes(new_size)} ([bold green]-{reduction:.0f}%[/])"
+                    f"  [green]gltfpack:[/] {format_bytes(original_size)} -> {format_bytes(new_size)} ([bold green]-{reduction:.0f}%[/])"
                 )
             else:
                 console.print(f"  [bold red][ERROR][/] {msg}")
@@ -314,7 +322,7 @@ def main() -> None:
             # UI Mode fallback (Running inside blender with open file, no CLI args)
             from notso_glb.exporters import optimize_and_export
 
-            optimize_and_export(
+            _ = optimize_and_export(
                 output_path=DEFAULT_CONFIG["output_path"],
                 use_draco=DEFAULT_CONFIG["use_draco"],
                 use_webp=DEFAULT_CONFIG["use_webp"],

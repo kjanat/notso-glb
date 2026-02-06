@@ -208,7 +208,7 @@ class TestMain:
         # Verify dprint was called (second subprocess call)
         assert mock_run.call_count == 2
         dprint_call = mock_run.call_args_list[1]
-        assert "dprint" in dprint_call[0][0]
+        assert "dprint" in str(dprint_call[0][0])
 
 
 class TestEdgeCases:

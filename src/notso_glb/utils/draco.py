@@ -91,16 +91,16 @@ def _check_gltf_for_draco(file_path: Path) -> bool:
     return _json_has_draco(gltf_json)
 
 
-def _json_has_draco(gltf_json: dict) -> bool:
+def _json_has_draco(gltf_json: dict[str, object]) -> bool:
     """Check if the glTF JSON structure indicates Draco compression is used."""
     # Check extensionsUsed array
     extensions_used = gltf_json.get("extensionsUsed", [])
-    if DRACO_EXTENSION in extensions_used:
+    if isinstance(extensions_used, list) and DRACO_EXTENSION in extensions_used:
         return True
 
     # Also check extensionsRequired for completeness
     extensions_required = gltf_json.get("extensionsRequired", [])
-    if DRACO_EXTENSION in extensions_required:
+    if isinstance(extensions_required, list) and DRACO_EXTENSION in extensions_required:
         return True
 
     return False

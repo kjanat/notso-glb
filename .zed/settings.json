@@ -19,13 +19,19 @@
       "env": { "UV_PROJECT": "/home/kjanat/projects/blender-mcp" }
     },
     "blender-git": {
-      "enabled": true,
+      "enabled": false,
       "command": "uvx",
       "args": [
         "--from",
         "git+https://github.com/kjanat/blender-mcp",
         "blender-mcp"
       ],
+      "env": {}
+    },
+    "blender-remote": {
+      "enabled": true,
+      "command": "uvx",
+      "args": ["blender-remote"],
       "env": {}
     }
   },
