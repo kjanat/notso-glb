@@ -26,7 +26,7 @@ jobs:
       - { uses: actions/checkout@v6, with: { fetch-depth: 0 }, id: checkout }
       - { uses: oven-sh/setup-bun@v2, with: { bun-version: "latest" }, id: bun }
       - { uses: ./.github/actions/install-uv, id: uv }
-      - { uses: ./.github/actions/install-dprint, id: dprint }
+      - { uses: kjanat/install-dprint@v1, id: dprint }
       - { uses: taiki-e/install-action@just, id: just }
       - { run: "sudo apt-get install -y shfmt", id: shfmt }
       - { run: "uv sync --all-groups --all-extras", id: uv-sync }
@@ -36,8 +36,8 @@ jobs:
         with:
           label_trigger: claude
           assignee_trigger: claude
-          track_progress: true
-          use_sticky_comment: true
+          track_progress: ${{ github.event_name != 'workflow_dispatch' }}
+          use_sticky_comment: ${{ github.event_name != 'workflow_dispatch' }}
           use_commit_signing: true
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           additional_permissions: "actions: read"
@@ -67,7 +67,7 @@ jobs:
       - { uses: actions/checkout@v6, with: { fetch-depth: 0 }, id: checkout }
       - { uses: oven-sh/setup-bun@v2, with: { bun-version: "latest" }, id: bun }
       - { uses: ./.github/actions/install-uv, id: uv }
-      - { uses: ./.github/actions/install-dprint, id: dprint }
+      - { uses: kjanat/install-dprint@v1, id: dprint }
       - { uses: taiki-e/install-action@just, id: just }
       - { run: "sudo apt-get install -y shfmt", id: shfmt }
       - { run: "uv sync --all-groups --all-extras", id: uv-sync }

@@ -14,7 +14,7 @@ jobs:
 
       - { name: "install-uv", uses: ./.github/actions/install-uv, id: uv }
       - { name: "install-just", uses: taiki-e/install-action@just, id: just }
-      - { name: "install-dprint", uses: ./.github/actions/install-dprint, id: dprint }
+      - { name: "install-dprint", uses: kjanat/install-dprint@v1, id: dprint }
       - { name: "install shfmt", run: "sudo apt-get install -y shfmt", id: shfmt }
 
       - { name: "uv sync", run: "uv sync --all-groups --all-extras", id: uv-sync }
