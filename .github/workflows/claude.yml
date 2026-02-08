@@ -8,6 +8,7 @@ on:
   pull_request_review: { types: [submitted, edited] }
   pull_request: { types: [opened, synchronize] }
   workflow_dispatch: { inputs: { prompt: { description: "Prompt for Claude", required: false, type: string } } }
+  pull_request_target: { types: [labeled] }
 jobs:
   claude:
     if: |
@@ -22,63 +23,68 @@ jobs:
     runs-on: ubuntu-latest
     permissions: { contents: write, pull-requests: write, issues: write, id-token: write, actions: read }
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with: { fetch-depth: 0 }
-      - uses: ./.github/actions/install-uv
-      - uses: ./.github/actions/install-dprint
-      - uses: taiki-e/install-action@just
-      - name: install shfmt
-        run: sudo apt-get install -y shfmt >/dev/null 2>&1
-      - run: uv sync --all-groups --all-extras
+      - { uses: actions/checkout@v6, with: { fetch-depth: 0 }, id: checkout }
+      - { uses: oven-sh/setup-bun@v2, with: { bun-version: "latest" }, id: bun }
+      - { uses: ./.github/actions/install-uv, id: uv }
+      - { uses: ./.github/actions/install-dprint, id: dprint }
+      - { uses: taiki-e/install-action@just, id: just }
+      - { run: "sudo apt-get install -y shfmt", id: shfmt }
+      - { run: "uv sync --all-groups --all-extras", id: uv-sync }
       - name: "@claude"
         uses: anthropics/claude-code-action@v1
         id: claude
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          use_sticky_comment: true
-          use_commit_signing: true
-          track_progress: true
-          settings: ".github/config/claude.json"
-          additional_permissions: "actions: read"
-          prompt: ${{ github.event.inputs.prompt || '' }}
           label_trigger: claude
           assignee_trigger: claude
+          track_progress: true
+          use_sticky_comment: true
+          use_commit_signing: true
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          additional_permissions: "actions: read"
+          settings: ${{ secrets.CLAUDE_SETTINGS }}
+          path_to_bun_executable: "${{ steps.bun.outputs.bun-path }}"
+          prompt: ${{ github.event.inputs.prompt || '' }}
           branch_name_template: "{{prefix}}{{label}}-{{entityNumber}}-{{description}}"
-          exclude_comments_by_actor: "*[bot]"
           allowed_bots: "coderabbitai[bot],dependabot[bot],renovate[bot]"
-          claude_args: |
-            --max-turns 25
-            --model claude-opus-4-6
 
   claude-bot-review:
     name: "@claude v bots"
     if: |
-      github.event_name == 'pull_request' && (
-        github.actor == 'dependabot[bot]' ||
-        github.actor == 'renovate[bot]'
+      ( github.event_name == 'pull_request_target' &&
+        github.event.action == 'labeled' &&
+        contains(github.event.label.name, 'claude') &&
+        github.actor == github.repository_owner
+      ) || (
+        github.event_name == 'pull_request' && (
+          github.actor == 'dependabot[bot]' ||
+          github.actor == 'renovate[bot]' ||
+          github.actor == 'coderabbitai[bot]'
+        )
       )
     runs-on: ubuntu-latest
     permissions: { contents: write, pull-requests: write, issues: write, id-token: write, actions: read }
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with: { fetch-depth: 0 }
-      - uses: ./.github/actions/install-uv
-      - uses: ./.github/actions/install-dprint
-      - uses: taiki-e/install-action@just
-      - name: install shfmt
-        run: sudo apt-get install -y shfmt >/dev/null 2>&1
-      - run: uv sync --all-groups --all-extras
+      - { uses: actions/checkout@v6, with: { fetch-depth: 0 }, id: checkout }
+      - { uses: oven-sh/setup-bun@v2, with: { bun-version: "latest" }, id: bun }
+      - { uses: ./.github/actions/install-uv, id: uv }
+      - { uses: ./.github/actions/install-dprint, id: dprint }
+      - { uses: taiki-e/install-action@just, id: just }
+      - { run: "sudo apt-get install -y shfmt", id: shfmt }
+      - { run: "uv sync --all-groups --all-extras", id: uv-sync }
       - name: Review bot PR
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           use_commit_signing: true
-          settings: ".github/config/claude.json"
           additional_permissions: "actions: read"
+          settings: ${{ secrets.CLAUDE_SETTINGS }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          path_to_bun_executable: "${{ steps.bun.outputs.bun-path }}"
+          allowed_bots: "coderabbitai[bot],dependabot[bot],renovate[bot]"
+          plugin_marketplaces: "https://github.com/anthropics/claude-code.git"
+          plugins: "code-review@claude-code-plugins"
           prompt: |
+            /code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}
             Review this dependency update PR #${{ github.event.pull_request.number }} by ${{ github.actor }}.
             Title: ${{ github.event.pull_request.title }}
             Base branch: ${{ github.base_ref }}
@@ -96,6 +102,3 @@ jobs:
             6. If everything passes (or after fixes), approve the PR with a summary
             7. Apply a label using `gh pr edit ${{ github.event.pull_request.number }} --add-label "claude: approved"`
                or `--add-label "claude: needs-attention"` if you couldn't fix it
-          claude_args: |
-            --max-turns 15
-            --model claude-sonnet-4-5

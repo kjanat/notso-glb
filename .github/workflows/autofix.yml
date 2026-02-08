@@ -10,16 +10,18 @@ jobs:
   autofix:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/install-uv
-      - uses: taiki-e/install-action@just
-      - uses: ./.github/actions/install-dprint
-      - name: install shfmt
-        run: sudo apt-get install -y shfmt >/dev/null 2>&1
+      - { uses: actions/checkout@v6, with: { fetch-depth: 1 }, id: checkout }
 
-      - run: uvx ruff check --fix-only # ruff autofix
-      - run: dprint config update
-      - run: dprint fmt --allow-no-files --diff --excludes ".github"
-      - run: just docs
+      - { name: "install-uv", uses: ./.github/actions/install-uv, id: uv }
+      - { name: "install-just", uses: taiki-e/install-action@just, id: just }
+      - { name: "install-dprint", uses: ./.github/actions/install-dprint, id: dprint }
+      - { name: "install shfmt", run: "sudo apt-get install -y shfmt", id: shfmt }
+
+      - { name: "uv sync", run: "uv sync --all-groups --all-extras", id: uv-sync }
+
+      - { name: "ruff check --fix", run: uvx ruff check --fix-only, id: ruff-fix }
+      - { name: "dprint update", run: dprint config update, id: "dprint-update" }
+      - { name: "dprint fmt", run: dprint fmt --allow-no-files --diff --excludes ".github", id: "dprint-fmt" }
+      - { name: "regenerate CLI.md", run: just docs, id: just-docs }
 
       - uses: autofix-ci/action@v1
