@@ -3,8 +3,8 @@
 name: Test WASM gltfpack
 
 on:
-  push: { branches: [master] }
-  pull_request: { branches: [master] }
+  push: { branches: [master], paths: ["{src,tests}/**/*.{py,wasm}", "**/*wasm*.yml"] }
+  pull_request: { branches: [master], paths: ["{src,tests}/**/*.{py,wasm}", "**/*wasm*.yml"] }
   schedule: [{ cron: "0 0 * * 0" }] # Weekly check for new gltfpack versions
   workflow_dispatch:
 
