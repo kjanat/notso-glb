@@ -42,7 +42,7 @@ jobs:
           use_commit_signing: true
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           additional_permissions: "actions: read"
-          settings: ${{ secrets.CLAUDE_SETTINGS }}
+          settings: ${{ vars.CLAUDE_SETTINGS }}
           path_to_bun_executable: "${{ steps.bun.outputs.bun-path }}"
           prompt: ${{ github.event.inputs.prompt || '' }}
           branch_name_template: "{{prefix}}{{label}}-{{entityNumber}}-{{description}}"
@@ -79,7 +79,7 @@ jobs:
         with:
           use_commit_signing: true
           additional_permissions: "actions: read"
-          settings: ${{ secrets.CLAUDE_SETTINGS }}
+          settings: ${{ vars.CLAUDE_SETTINGS }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           path_to_bun_executable: "${{ steps.bun.outputs.bun-path }}"
           allowed_bots: "coderabbitai[bot],dependabot[bot],renovate[bot]"
