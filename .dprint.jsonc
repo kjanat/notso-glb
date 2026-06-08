@@ -1,39 +1,20 @@
 {
-  "$schema": "https://dprint.dev/schemas/v0.json",
-  "typescript": {},
-  "json": {},
-  "markdown": { "textWrap": "always", "emphasisKind": "asterisks", "associations": [".rules", "*.md"] },
-  "dockerfile": { "associations": ["Dockerfile", "Dockerfile.*"] },
-  "ruff": { "preview": true },
-  "jupyter": {},
-  "malva": {},
-  "markup": {},
-  "yaml": { "printWidth": 160 },
-  "exec": {
-    "cwd": "${configDir}",
-    "commands": [
-      {
-        "command": "uvx tombi format - --stdin-filename {{file_path}}",
-        "exts": ["toml"],
-      },
-      { "command": "shfmt -i 0 -ln bash -bn -ci --filename {{file_path}}", "exts": ["sh", "bash"] },
-      {
-        "command": "just --dump",
-        "fileNames": ["justfile"],
-      },
-    ],
-  },
-  "excludes": ["**/node_modules", "**/*-lock.json", "**/.venv"],
-  "plugins": [
-    "https://plugins.dprint.dev/typescript-0.96.1.wasm",
-    "https://plugins.dprint.dev/json-0.21.3.wasm",
-    "https://plugins.dprint.dev/markdown-0.22.1.wasm",
-    "https://plugins.dprint.dev/dockerfile-0.4.0.wasm",
-    "https://plugins.dprint.dev/ruff-0.7.15.wasm",
-    "https://plugins.dprint.dev/jupyter-0.2.3.wasm",
-    "https://plugins.dprint.dev/g-plane/malva-v0.16.0.wasm",
-    "https://plugins.dprint.dev/g-plane/markup_fmt-v0.27.3.wasm",
-    "https://plugins.dprint.dev/g-plane/pretty_yaml-v0.6.0.wasm",
-    "https://plugins.dprint.dev/exec-0.6.2.json@df98f54ffd3092b8a841aedd6d098a2651f16d0a796a40535774f1a8b4b9d463",
-  ],
+	"$schema": "https://dprint.dev/schemas/v0.json",
+	"extends": "https://github.com/kjanat/kjanat/raw/886a886/configs/dprint.remote.json",
+	"dockerfile": { "associations": ["Dockerfile", "Dockerfile.*"] },
+	"newLineKind": "lf",
+	"exec": {
+		"cwd": "${configDir}",
+		"commands": [{
+			"command": "npx -y -p=tombi tombi format - --stdin-filename {{file_path}}",
+			"exts": ["toml"],
+		}, {
+			"command": "npx -y -p=rust-just just --dump",
+			"fileNames": ["justfile"],
+		}],
+	},
+	"excludes": ["**/node_modules", "**/*-lock.json", "**/bun.lock*", "**/.venv"],
+	"plugins": [
+		"https://plugins.dprint.dev/exec-0.6.2.json@df98f54ffd3092b8a841aedd6d098a2651f16d0a796a40535774f1a8b4b9d463",
+	],
 }

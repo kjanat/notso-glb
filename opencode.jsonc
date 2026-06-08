@@ -1,57 +1,50 @@
 {
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "blender": {
-      "type": "local",
-      "command": ["uv", "run", "blender-mcp"],
-      "enabled": false,
-      "environment": {
-        "UV_PROJECT": "~/projects/blender-mcp",
-      },
-    },
-    "blender-git": {
-      "type": "local",
-      "command": [
-        "uvx",
-        "--from",
-        "git+https://github.com/kjanat/blender-mcp",
-        "blender-mcp",
-      ],
-      "enabled": true,
-    },
-  },
-  "lsp": {
-    "ruff": {
-      "command": [".venv/bin/ruff", "server", "--preview"],
-      "extensions": [".py", ".pyi", ".ipynb"],
-    },
-    "ty": {
-      "command": [".venv/bin/ty", "server"],
-      "extensions": [".py", ".pyi", ".ipynb"],
-    },
-  },
-  "formatter": {
-    "dprint": {
-      "command": ["dprint", "fmt", "$FILE"],
-      "extensions": [
-        ".css",
-        ".html",
-        ".ipynb",
-        ".json",
-        ".jsonc",
-        ".less",
-        ".md",
-        ".py",
-        ".pyi",
-        ".sass",
-        ".scss",
-        ".toml",
-        ".ts",
-        ".tsx",
-        ".yaml",
-        ".yml",
-        "Dockerfile",
-      ],
-    },
-  },
+	"$schema": "https://opencode.ai/config.json",
+	"mcp": {
+		"blender": {
+			"type": "local",
+			"command": ["uv", "run", "blender-mcp"],
+			"enabled": false,
+			"environment": { "UV_PROJECT": "~/projects/blender-mcp" },
+		},
+		"blender-git": {
+			"type": "local",
+			"command": ["uvx", "--from", "git+https://github.com/kjanat/blender-mcp", "blender-mcp"],
+			"enabled": true,
+		},
+	},
+	"lsp": {
+		"ruff": {
+			"command": ["uvx", "ruff", "server", "--preview"],
+			"extensions": [".py", ".pyi", ".ipynb"],
+		},
+		"ty": {
+			"command": ["uvx", "ty", "server"],
+			"extensions": [".py", ".pyi", ".ipynb"],
+		},
+	},
+	"formatter": {
+		"dprint": {
+			"command": ["dprint", "fmt", "$FILE"],
+			"extensions": [
+				".css",
+				".html",
+				".ipynb",
+				".json",
+				".jsonc",
+				".less",
+				".md",
+				".py",
+				".pyi",
+				".sass",
+				".scss",
+				".toml",
+				".ts",
+				".tsx",
+				".yaml",
+				".yml",
+				"Dockerfile",
+			],
+		},
+	},
 }

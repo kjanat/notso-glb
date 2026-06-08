@@ -1,13 +1,9 @@
 {
-  "mcpServers": {
-    "blender": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/kjanat/blender-mcp",
-        "blender-mcp"
-      ],
-      "env": {}
-    }
-  }
+	"mcpServers": {
+		"blender": {
+			"command": "uvx",
+			"args": ["--from", "git+https://github.com/kjanat/blender-mcp", "blender-mcp"],
+			"env": {}
+		}
+	}
 }
