@@ -9,8 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with: { fetch-depth: 1 }
-      - uses: kjanat/runner@master
-      - uses: kjanat/install-shfmt@v1
+      - uses: kjanat/runner@v0.12.1
       - uses: kjanat/install-dprint@v1
       - uses: ./.github/actions/install-uv
       - uses: taiki-e/install-action@just
@@ -18,7 +17,7 @@ jobs:
       - run: runner install docs
 
       - run: uvx ruff check --fix-only
-      - run: dprint fmt --allow-no-files --diff --excludes ".github"
+      - run: dprint fmt --allow-no-files --diff --excludes .github
 
       - if: github.event_name != 'pull_request'
         run: dprint config update --yes --recursive

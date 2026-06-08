@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+---
+# Stage 1 of the secure bot-PR review split (stage 2 = bot-pr-review.yml).
+#
+# Runs the dependency PR's own code (uv sync + tests + lint) in an UNTRUSTED
+# context: a read-only GITHUB_TOKEN and NO repository secrets. A malicious or
+# compromised dependency version therefore cannot exfiltrate secrets or push to
+# the repo — there are none here and the token can't write. The check results +
+# PR metadata are handed to the privileged stage 2 purely as an artifact (data).
+name: Bot PR Test
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+concurrency:
+  group: bot-pr-test-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  test:
+    # Dependency bots only. contains(fromJSON(...)) reads as "actor in this set".
+    if: contains(fromJSON('["dependabot[bot]","renovate[bot]","coderabbitai[bot]"]'), github.actor)
+    runs-on: ubuntu-latest
+    steps:
+      - { uses: actions/checkout@v6, with: { fetch-depth: 0 } }
+
+      # Write PR metadata via env vars, never interpolated into the shell — an
+      # ${{ github.event.pull_request.body }} inline would be a script-injection.
+      - name: Capture PR metadata (untrusted data)
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_ACTOR: ${{ github.actor }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          mkdir -p results
+          printf '%s' "$PR_NUMBER" > results/pr-number.txt
+          printf '%s' "$PR_ACTOR"  > results/pr-actor.txt
+          printf '%s' "$PR_TITLE"  > results/pr-title.txt
+          printf '%s' "$PR_BODY"   > results/pr-body.txt
+
+      - { uses: ./.github/actions/install-uv, id: uv }
+      - { uses: kjanat/install-dprint@v1, id: dprint }
+      - { uses: taiki-e/install-action@just, id: just }
+
+      # set +e: capture each exit code instead of failing the job, so stage 2
+      # always gets a complete status. The dependency code runs here (sandboxed).
+      - name: Run checks
+        run: |
+          mkdir -p results
+          set +e
+          uv sync --all-groups --all-extras > results/sync.log 2>&1; echo "sync_exit=$?" >> results/status.env
+          just test > results/test.log 2>&1; echo "test_exit=$?" >> results/status.env
+          just lint > results/lint.log 2>&1; echo "lint_exit=$?" >> results/status.env
+          tail -c 60000 results/test.log > results/test.tail.log
+          tail -c 60000 results/lint.log > results/lint.tail.log
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bot-pr-checks
+          path: results/
+          retention-days: 3
