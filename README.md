@@ -1,6 +1,7 @@
 # GLB Export Optimizer for Mascot Models
 
-> Cleans up Blender files and exports optimized GLB for web delivery.
+> Cleans up Blender/glTF files (`.blend`, `.glb`, `.gltf`) and exports
+> optimized glTF — GLB, glTF, or embedded — for web delivery.
 
 ```bash
 uvx notso-glb [OPTIONS] FILE
@@ -81,7 +82,9 @@ Optimizations:
 - Marks static bones as non-deform (animation bloat)
 - Removes bone shape objects (Icosphere artifacts)
 - Resizes textures to max 1024px (optional `POT` enforcement)
-- Exports with Draco mesh compression
+- Compresses meshes with gltfpack by default (bundled WASM fallback); falls back
+  to Draco when gltfpack is unavailable, and auto-detects existing Draco to avoid
+  double compression
 - Exports with WebP textures
 
 Bloat Detection:
