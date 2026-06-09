@@ -24,7 +24,7 @@ class TestGetWasmPath:
 class TestIsAvailable:
     """Tests for is_available function."""
 
-    @patch("notso_glb.wasm._get_wasm_path")
+    @patch("notso_glb.wasm.get_wasm_path")
     def test_returns_true_when_wasmtime_and_wasm_exist(
         self, mock_get_path: MagicMock, tmp_path: Path
     ) -> None:
@@ -40,7 +40,7 @@ class TestIsAvailable:
         # Will be True only if wasmtime is actually installed
         assert isinstance(result, bool)
 
-    @patch("notso_glb.wasm._get_wasm_path")
+    @patch("notso_glb.wasm.get_wasm_path")
     def test_returns_false_when_wasm_missing(
         self, mock_get_path: MagicMock, tmp_path: Path
     ) -> None:

@@ -25,7 +25,9 @@ class TestAutoFixDuplicateNames:
         """Bone duplicates should be skipped."""
         from notso_glb.cleaners import auto_fix_duplicate_names
 
-        duplicates = [{"type": "BONE", "name": "Armature/Bone", "count": 2}]
+        duplicates: list[dict[str, object]] = [
+            {"type": "BONE", "name": "Armature/Bone", "count": 2}
+        ]
         assert auto_fix_duplicate_names(duplicates) == []
 
     def test_fixes_sanitization_collision(self) -> None:
@@ -37,7 +39,7 @@ class TestAutoFixDuplicateNames:
         bpy.ops.mesh.primitive_cube_add()
         _active_object().name = "Test_001"
 
-        duplicates = [
+        duplicates: list[dict[str, object]] = [
             {
                 "type": "OBJECT",
                 "name": "Test_001 <- ['Test.001', 'Test_001']",
@@ -60,7 +62,7 @@ class TestAutoFixDuplicateNames:
         mesh2 = bpy.data.meshes.new("DupMesh")
 
         if mesh1.name == mesh2.name:
-            duplicates = [
+            duplicates: list[dict[str, object]] = [
                 {
                     "type": "MESH",
                     "name": mesh1.name,
@@ -80,7 +82,7 @@ class TestAutoFixDuplicateNames:
         """Should skip unknown collection types gracefully."""
         from notso_glb.cleaners import auto_fix_duplicate_names
 
-        duplicates = [
+        duplicates: list[dict[str, object]] = [
             {
                 "type": "UNKNOWN_TYPE",
                 "name": "Something",
@@ -101,7 +103,7 @@ class TestAutoFixDuplicateNames:
 
         # Blender may auto-rename, so check if they have the same name
         if mat1.name == mat2.name:
-            duplicates = [
+            duplicates: list[dict[str, object]] = [
                 {
                     "type": "MATERIAL",
                     "name": mat1.name,
@@ -125,7 +127,7 @@ class TestAutoFixDuplicateNames:
         action2 = bpy.data.actions.new("Action")
 
         if action1.name == action2.name:
-            duplicates = [
+            duplicates: list[dict[str, object]] = [
                 {
                     "type": "ACTION",
                     "name": action1.name,
@@ -150,7 +152,7 @@ class TestAutoFixDuplicateNames:
         mesh3 = bpy.data.meshes.new("MultiDup")
 
         if mesh1.name == mesh2.name == mesh3.name:
-            duplicates = [
+            duplicates: list[dict[str, object]] = [
                 {
                     "type": "MESH",
                     "name": mesh1.name,
@@ -180,7 +182,7 @@ class TestAutoFixDuplicateNames:
 
         if mesh1.name == mesh2.name:
             # Pass same duplicate entry twice
-            duplicates = [
+            duplicates: list[dict[str, object]] = [
                 {
                     "type": "MESH",
                     "name": mesh1.name,
@@ -214,7 +216,7 @@ class TestAutoFixDuplicateNames:
         bpy.ops.mesh.primitive_cube_add()
         _active_object().name = "Obj.B"
 
-        duplicates = [
+        duplicates: list[dict[str, object]] = [
             {
                 "type": "OBJECT",
                 "name": "Obj_A <- ['Obj.A', 'Obj_A']",
@@ -230,7 +232,7 @@ class TestAutoFixDuplicateNames:
         """Should handle empty or malformed collision names."""
         from notso_glb.cleaners import auto_fix_duplicate_names
 
-        duplicates = [
+        duplicates: list[dict[str, object]] = [
             {
                 "type": "OBJECT",
                 "name": "Test_001 <- []",

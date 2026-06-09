@@ -69,8 +69,9 @@ class WasiFilesystem:
     def _refresh_memory(self) -> None:
         """Refresh memory array reference (needed after memory growth)."""
         memory = self._get_memory()
-        ptr = memory.data_ptr(self._store)  # type: ignore[arg-type]
-        size = memory.data_len(self._store)  # type: ignore[arg-type]
+        assert self._store is not None
+        ptr = memory.data_ptr(self._store)
+        size = memory.data_len(self._store)
         self._memory_array = (ctypes.c_ubyte * size).from_address(
             ctypes.addressof(ptr.contents)
         )

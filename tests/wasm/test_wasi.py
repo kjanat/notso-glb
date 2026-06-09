@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Any
 
 import pytest
-
-if TYPE_CHECKING:
-    from notso_glb.wasm.wasi import WasiFilesystem
 
 
 class TestWasiExit:
@@ -140,60 +137,58 @@ class TestMemoryAccess:
         with pytest.raises(RuntimeError, match="not initialized"):
             fs._get_memory()
 
-    def test_check_bounds_validates_offset(self, mock_wasi_fs: WasiFilesystem) -> None:
+    def test_check_bounds_validates_offset(self, mock_wasi_fs: Any) -> None:
         """Should validate memory offset bounds."""
-        mock_wasi_fs._memory_array = bytearray(100)  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(100)
 
         with pytest.raises(ValueError, match="negative offset"):
             mock_wasi_fs._check_bounds("test", -1, 10)
 
-    def test_check_bounds_validates_length(self, mock_wasi_fs: WasiFilesystem) -> None:
+    def test_check_bounds_validates_length(self, mock_wasi_fs: Any) -> None:
         """Should validate memory access length."""
-        mock_wasi_fs._memory_array = bytearray(100)  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(100)
 
         with pytest.raises(ValueError, match="out of bounds"):
             mock_wasi_fs._check_bounds("test", 90, 20)
 
-    def test_set_u8_writes_byte(self, mock_wasi_fs: WasiFilesystem) -> None:
+    def test_set_u8_writes_byte(self, mock_wasi_fs: Any) -> None:
         """Should write single byte to memory."""
-        mock_wasi_fs._memory_array = bytearray(10)  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(10)
 
         mock_wasi_fs._set_u8(5, 42)
 
-        assert mock_wasi_fs._memory_array[5] == 42  # type: ignore[index]
+        assert mock_wasi_fs._memory_array[5] == 42
 
-    def test_set_u8_masks_to_byte(self, mock_wasi_fs: WasiFilesystem) -> None:
+    def test_set_u8_masks_to_byte(self, mock_wasi_fs: Any) -> None:
         """Should mask value to single byte."""
-        mock_wasi_fs._memory_array = bytearray(10)  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(10)
 
         mock_wasi_fs._set_u8(5, 0x1FF)
 
-        assert mock_wasi_fs._memory_array[5] == 0xFF  # type: ignore[index]
+        assert mock_wasi_fs._memory_array[5] == 0xFF
 
-    def test_set_u32_writes_little_endian(self, mock_wasi_fs: WasiFilesystem) -> None:
+    def test_set_u32_writes_little_endian(self, mock_wasi_fs: Any) -> None:
         """Should write uint32 in little-endian format."""
-        mock_wasi_fs._memory_array = bytearray(10)  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(10)
 
         mock_wasi_fs._set_u32(0, 0x12345678)
 
-        assert mock_wasi_fs._memory_array[0] == 0x78  # type: ignore[index]
-        assert mock_wasi_fs._memory_array[1] == 0x56  # type: ignore[index]
-        assert mock_wasi_fs._memory_array[2] == 0x34  # type: ignore[index]
-        assert mock_wasi_fs._memory_array[3] == 0x12  # type: ignore[index]
+        assert mock_wasi_fs._memory_array[0] == 0x78
+        assert mock_wasi_fs._memory_array[1] == 0x56
+        assert mock_wasi_fs._memory_array[2] == 0x34
+        assert mock_wasi_fs._memory_array[3] == 0x12
 
-    def test_get_u32_reads_little_endian(self, mock_wasi_fs: WasiFilesystem) -> None:
+    def test_get_u32_reads_little_endian(self, mock_wasi_fs: Any) -> None:
         """Should read uint32 in little-endian format."""
-        mock_wasi_fs._memory_array = bytearray(  # type: ignore[assignment]
-            [0x78, 0x56, 0x34, 0x12]
-        )
+        mock_wasi_fs._memory_array = bytearray([0x78, 0x56, 0x34, 0x12])
 
         value = mock_wasi_fs._get_u32(0)
 
         assert value == 0x12345678
 
-    def test_get_string_decodes_utf8(self, mock_wasi_fs: WasiFilesystem) -> None:
+    def test_get_string_decodes_utf8(self, mock_wasi_fs: Any) -> None:
         """Should decode UTF-8 string from memory."""
-        mock_wasi_fs._memory_array = bytearray(b"Hello\x00World")  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(b"Hello\x00World")
 
         text = mock_wasi_fs._get_string(0, 5)
 
@@ -239,41 +234,35 @@ class TestWasiSyscalls:
 
         assert result == WASI_EBADF
 
-    def test_fd_fdstat_get_identifies_output_fd(
-        self, mock_wasi_fs: WasiFilesystem
-    ) -> None:
+    def test_fd_fdstat_get_identifies_output_fd(self, mock_wasi_fs: Any) -> None:
         """Should identify output FDs (stdout/stderr)."""
         mock_wasi_fs._init_fds()
-        mock_wasi_fs._memory_array = bytearray(100)  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(100)
 
         result = mock_wasi_fs.wasi_fd_fdstat_get(1, 0)
 
         assert result == 0
         # Check filetype is character device (2)
-        assert mock_wasi_fs._memory_array[0] == 2  # type: ignore[index]
+        assert mock_wasi_fs._memory_array[0] == 2
 
-    def test_fd_fdstat_get_identifies_directory(
-        self, mock_wasi_fs: WasiFilesystem
-    ) -> None:
+    def test_fd_fdstat_get_identifies_directory(self, mock_wasi_fs: Any) -> None:
         """Should identify directory FDs."""
         mock_wasi_fs._init_fds()
-        mock_wasi_fs._memory_array = bytearray(100)  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(100)
 
         result = mock_wasi_fs.wasi_fd_fdstat_get(3, 0)
 
         assert result == 0
         # Check filetype is directory (3)
-        assert mock_wasi_fs._memory_array[0] == 3  # type: ignore[index]
+        assert mock_wasi_fs._memory_array[0] == 3
 
-    def test_fd_write_appends_to_output_buffer(
-        self, mock_wasi_fs: WasiFilesystem
-    ) -> None:
+    def test_fd_write_appends_to_output_buffer(self, mock_wasi_fs: Any) -> None:
         """Should append to output buffer for stdout/stderr."""
         mock_wasi_fs._init_fds()
-        mock_wasi_fs._memory_array = bytearray(100)  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(100)
 
         # Write "Hello" to memory at offset 0
-        mock_wasi_fs._memory_array[0:5] = b"Hello"  # type: ignore[index]
+        mock_wasi_fs._memory_array[0:5] = b"Hello"
 
         # Set up iovec: [ptr=0, len=5]
         mock_wasi_fs._set_u32(10, 0)  # buffer ptr
@@ -285,10 +274,10 @@ class TestWasiSyscalls:
         assert mock_wasi_fs._output_buffer == b"Hello"
         assert mock_wasi_fs._get_u32(20) == 5  # bytes written
 
-    def test_fd_read_reads_from_file(self, mock_wasi_fs: WasiFilesystem) -> None:
+    def test_fd_read_reads_from_file(self, mock_wasi_fs: Any) -> None:
         """Should read from file data."""
         mock_wasi_fs._init_fds()
-        mock_wasi_fs._memory_array = bytearray(100)  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(100)
 
         # Set up a file descriptor with data
         mock_wasi_fs._fds[10] = {
@@ -304,14 +293,14 @@ class TestWasiSyscalls:
         result = mock_wasi_fs.wasi_fd_read(10, 0, 1, 10)
 
         assert result == 0
-        assert bytes(mock_wasi_fs._memory_array[50:55]) == b"Test "  # type: ignore[index]
+        assert bytes(mock_wasi_fs._memory_array[50:55]) == b"Test "
         assert mock_wasi_fs._get_u32(10) == 5  # bytes read
         assert mock_wasi_fs._fds[10]["position"] == 5
 
-    def test_fd_seek_updates_position(self, mock_wasi_fs: WasiFilesystem) -> None:
+    def test_fd_seek_updates_position(self, mock_wasi_fs: Any) -> None:
         """Should update file position."""
         mock_wasi_fs._init_fds()
-        mock_wasi_fs._memory_array = bytearray(100)  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(100)
         mock_wasi_fs._fds[10] = {"size": 100, "position": 0}
 
         result = mock_wasi_fs.wasi_fd_seek32(10, 50, 0, 0)  # SEEK_SET
@@ -319,10 +308,10 @@ class TestWasiSyscalls:
         assert result == 0
         assert mock_wasi_fs._fds[10]["position"] == 50
 
-    def test_fd_seek_seek_cur(self, mock_wasi_fs: WasiFilesystem) -> None:
+    def test_fd_seek_seek_cur(self, mock_wasi_fs: Any) -> None:
         """Should seek relative to current position."""
         mock_wasi_fs._init_fds()
-        mock_wasi_fs._memory_array = bytearray(100)  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(100)
         mock_wasi_fs._fds[10] = {"size": 100, "position": 20}
 
         result = mock_wasi_fs.wasi_fd_seek32(10, 10, 1, 0)  # SEEK_CUR
@@ -330,10 +319,10 @@ class TestWasiSyscalls:
         assert result == 0
         assert mock_wasi_fs._fds[10]["position"] == 30
 
-    def test_fd_seek_seek_end(self, mock_wasi_fs: WasiFilesystem) -> None:
+    def test_fd_seek_seek_end(self, mock_wasi_fs: Any) -> None:
         """Should seek relative to end."""
         mock_wasi_fs._init_fds()
-        mock_wasi_fs._memory_array = bytearray(100)  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(100)
         mock_wasi_fs._fds[10] = {"size": 100, "position": 0}
 
         result = mock_wasi_fs.wasi_fd_seek32(10, -10, 2, 0)  # SEEK_END
@@ -341,12 +330,12 @@ class TestWasiSyscalls:
         assert result == 0
         assert mock_wasi_fs._fds[10]["position"] == 90
 
-    def test_fd_seek_validates_bounds(self, mock_wasi_fs: WasiFilesystem) -> None:
+    def test_fd_seek_validates_bounds(self, mock_wasi_fs: Any) -> None:
         """Should validate seek position bounds."""
         from notso_glb.wasm.constants import WASI_EINVAL
 
         mock_wasi_fs._init_fds()
-        mock_wasi_fs._memory_array = bytearray(100)  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(100)
         mock_wasi_fs._fds[10] = {"size": 100, "position": 0}
 
         result = mock_wasi_fs.wasi_fd_seek32(10, -10, 0, 0)  # Negative position
@@ -379,10 +368,10 @@ class TestWasiSyscalls:
 class TestEdgeCases:
     """Tests for edge cases and boundary conditions."""
 
-    def test_fd_write_grows_file_buffer(self, mock_wasi_fs: WasiFilesystem) -> None:
+    def test_fd_write_grows_file_buffer(self, mock_wasi_fs: Any) -> None:
         """Should grow file buffer when writing beyond capacity."""
         mock_wasi_fs._init_fds()
-        mock_wasi_fs._memory_array = bytearray(100)  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(100)
 
         # Small initial buffer
         mock_wasi_fs._fds[10] = {
@@ -392,7 +381,7 @@ class TestEdgeCases:
         }
 
         # Write 50 bytes
-        mock_wasi_fs._memory_array[0:50] = b"X" * 50  # type: ignore[index]
+        mock_wasi_fs._memory_array[0:50] = b"X" * 50
         mock_wasi_fs._set_u32(60, 0)  # buffer ptr
         mock_wasi_fs._set_u32(64, 50)  # buffer len
 
@@ -401,10 +390,10 @@ class TestEdgeCases:
         assert result == 0
         assert len(mock_wasi_fs._fds[10]["data"]) >= 50
 
-    def test_fd_read_at_eof(self, mock_wasi_fs: WasiFilesystem) -> None:
+    def test_fd_read_at_eof(self, mock_wasi_fs: Any) -> None:
         """Should handle read at EOF."""
         mock_wasi_fs._init_fds()
-        mock_wasi_fs._memory_array = bytearray(100)  # type: ignore[assignment]
+        mock_wasi_fs._memory_array = bytearray(100)
 
         mock_wasi_fs._fds[10] = {
             "data": bytearray(b"Test"),
@@ -420,12 +409,12 @@ class TestEdgeCases:
         assert result == 0
         assert mock_wasi_fs._get_u32(10) == 0  # 0 bytes read
 
-    def test_handles_unicode_in_strings(self, mock_wasi_fs: WasiFilesystem) -> None:
+    def test_handles_unicode_in_strings(self, mock_wasi_fs: Any) -> None:
         """Should handle Unicode strings."""
         unicode_text = "Hello 世界 🌍"
         encoded = unicode_text.encode("utf-8")
-        mock_wasi_fs._memory_array = bytearray(len(encoded))  # type: ignore[assignment]
-        mock_wasi_fs._memory_array[:] = encoded  # type: ignore[index]
+        mock_wasi_fs._memory_array = bytearray(len(encoded))
+        mock_wasi_fs._memory_array[:] = encoded
 
         text = mock_wasi_fs._get_string(0, len(encoded))
 

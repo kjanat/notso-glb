@@ -205,17 +205,17 @@ def parse_query_string(qs: str) -> dict[str, str]:
 class OptimizeHandler(BaseHTTPRequestHandler):
     """HTTP request handler that wraps the notso-glb CLI."""
 
-    def log_message(self, fmt: str, *args: object) -> None:
+    def log_message(self, format: str, *args: object) -> None:
         """Log a formatted message to stdout for container log collection.
 
         Args:
-            fmt: A percent-style format string (e.g. ``"Running: %s"``).
-            *args: Values substituted into *fmt* via ``%`` formatting.
+            format: A percent-style format string (e.g. ``"Running: %s"``).
+            *args: Values substituted into *format* via ``%`` formatting.
 
         Returns:
             None.
         """
-        print(f"[server] {fmt % args}")
+        print(f"[server] {format % args}")
 
     def do_GET(self) -> None:
         """Handle GET requests for health checks and service info."""

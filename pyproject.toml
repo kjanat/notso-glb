@@ -73,6 +73,9 @@ line-ending                = "lf"
 docstring-code-format      = true
 docstring-code-line-length = "dynamic"
 
+[tool.ty.environment]
+extra-paths = [".github/actions/test-wasm-models"]
+
 [tool.uv]
 default-groups        = "all"
 compile-bytecode      = true

@@ -19,7 +19,9 @@ class GltfpackWasm(WasiFilesystem):
 
     def _get_export(self, name: str) -> Any:
         """Get a named export from the WASM instance."""
-        exports: Any = self._instance.exports(self._store)  # type: ignore[union-attr]
+        assert self._instance is not None
+        assert self._store is not None
+        exports: Any = self._instance.exports(self._store)
         return exports[name]
 
     def _upload_argv(self, argv: list[str]) -> int:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import struct
+from collections.abc import Mapping
 from pathlib import Path
 
 # GLB magic number (ASCII "glTF")
@@ -91,7 +92,7 @@ def _check_gltf_for_draco(file_path: Path) -> bool:
     return _json_has_draco(gltf_json)
 
 
-def _json_has_draco(gltf_json: dict[str, object]) -> bool:
+def _json_has_draco(gltf_json: Mapping[str, object]) -> bool:
     """Check if the glTF JSON structure indicates Draco compression is used."""
     # Check extensionsUsed array
     extensions_used = gltf_json.get("extensionsUsed", [])
