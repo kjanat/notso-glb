@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any
-from unittest.mock import MagicMock
-
 import pytest
+
+from notso_glb.wasm.wasi import WasiFilesystem
 
 
 # Override the autouse fixture from parent conftest
@@ -16,18 +15,15 @@ def reset_blender_scene() -> None:
 
 
 @pytest.fixture
-def mock_wasi_fs() -> Any:
-    """Create a WasiFilesystem with mocked _refresh_memory for testing.
+def mock_wasi_fs(monkeypatch: pytest.MonkeyPatch) -> WasiFilesystem:
+    """Create a WasiFilesystem with _refresh_memory neutralized for testing.
 
-    This allows tests to set _memory_array directly (as a plain bytearray)
-    without needing a full WASM runtime initialization. The return type is
-    ``Any`` because the fixture deliberately injects test doubles
-    (``MagicMock`` for ``_refresh_memory`` and a ``bytearray`` for
-    ``_memory_array``) that do not match the production attribute types.
+    Tests inject ``_memory_array`` directly (a real ``ctypes`` ubyte array
+    matching the production type), so ``_refresh_memory`` must not overwrite it.
+    ``monkeypatch.setattr`` swaps the method dynamically (and auto-reverts),
+    which keeps the fixture typed as the real ``WasiFilesystem`` rather than a
+    type-erased ``Any``.
     """
-    from notso_glb.wasm.wasi import WasiFilesystem
-
-    fs: Any = WasiFilesystem()
-    # Mock _refresh_memory to do nothing - tests will set _memory_array directly
-    fs._refresh_memory = MagicMock()
+    fs = WasiFilesystem()
+    monkeypatch.setattr(fs, "_refresh_memory", lambda: None)
     return fs
