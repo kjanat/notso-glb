@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from .runner import get_gltfpack, reset_gltfpack, run_gltfpack_wasm
 from .runtime import GltfpackWasm, get_wasm_path
 

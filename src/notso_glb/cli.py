@@ -238,6 +238,7 @@ def optimize(
 
     # Post-process with gltfpack if enabled
     if use_gltfpack:
+        from notso_glb.utils.draco import has_draco_compression
         from notso_glb.utils.gltfpack import run_gltfpack
         from notso_glb.utils.logging import format_bytes
 
@@ -264,7 +265,7 @@ def optimize(
                 Path(result),
                 output_path=Path(result),  # Overwrite original
                 texture_compress=True,
-                mesh_compress=True,
+                mesh_compress=gltfpack_mesh_compress,
             )
 
             if success:
