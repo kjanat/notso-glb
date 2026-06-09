@@ -6,7 +6,7 @@ on: { pull_request: { types: [opened, synchronize, reopened, closed] } }
 permissions: { contents: read, pull-requests: write }
 env: # Configure these for your project
   CLI_NAME: "" # CLI command name (defaults to repo name if empty)
-  PYTHON_VERSION: "3.11" # Python version for uvx (leave empty to omit -p flag)
+  PYTHON_VERSION: 3.11 # Python version for uvx (leave empty to omit -p flag)
   # Example commands (one per line, use {cmd} as placeholder for full uvx command)
   CLI_EXAMPLES: |
     # Optimize a GLB file

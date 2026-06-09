@@ -17,7 +17,7 @@ on:
       new_version: { description: "Version after the bump", value: "${{ jobs.bump.outputs.new_version }}" }
       tag: { description: "Git tag that was created", value: "${{ jobs.bump.outputs.tag }}" }
 permissions: { contents: write }
-env: { UV_PYTHON: "3.11" }
+env: { UV_PYTHON: 3.11 }
 jobs:
   bump:
     name: Bump version

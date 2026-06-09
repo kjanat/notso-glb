@@ -30,6 +30,7 @@ concurrency:
 env:
   IMAGE_NAME: notso-glb
   TEST_TAG: notso-glb:test
+  UV_PYTHON: 3.11
 
 jobs:
   build-and-test:

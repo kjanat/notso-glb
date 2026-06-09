@@ -10,6 +10,7 @@ on:
   # Bot dependency-PR review lives in bot-pr-test.yml + bot-pr-review.yml
   # (secure split: untrusted code runs without secrets, privileged step never executes PR code).
   # Do not re-add a pull_request_target bot-review job here.
+env: { UV_PYTHON: 3.11 }
 jobs:
   claude:
     if: >-
@@ -24,12 +25,16 @@ jobs:
     permissions: { contents: write, pull-requests: write, issues: write, id-token: write, actions: read }
     concurrency: { group: "claude-code-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}", cancel-in-progress: true }
     steps:
-      - { uses: actions/checkout@v6, with: { fetch-depth: 0 }, id: checkout }
-      - { uses: oven-sh/setup-bun@v2, with: { bun-version: "latest" }, id: bun }
-      - { uses: ./.github/actions/install-uv, id: uv }
-      - { uses: kjanat/install-dprint@v1, id: dprint }
-      - { uses: taiki-e/install-action@just, id: just }
-      - { run: "uv sync --all-groups --all-extras", id: uv-sync }
+      - uses: actions/checkout@v6
+        with: { fetch-depth: 0 }
+      - uses: oven-sh/setup-bun@v2
+        with: { bun-version: latest }
+        id: bun
+      - uses: ./.github/actions/install-uv
+        id: uv
+      - uses: taiki-e/install-action@v2
+        with: { tool: "dprint,just,tombi,uv" }
+      - run: uv sync --all-groups --all-extras
       - name: "@claude"
         uses: anthropics/claude-code-action@v1
         id: claude

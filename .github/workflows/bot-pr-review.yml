@@ -20,6 +20,7 @@ permissions:
 concurrency:
   group: bot-pr-review-${{ github.event.workflow_run.id }}
   cancel-in-progress: true
+env: { UV_PYTHON: 3.11 }
 jobs:
   review:
     # Stage 1 actually ran (skipped non-bot PRs never reach here). Its job

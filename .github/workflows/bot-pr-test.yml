@@ -16,6 +16,7 @@ permissions:
 concurrency:
   group: bot-pr-test-${{ github.event.pull_request.number }}
   cancel-in-progress: true
+env: { UV_PYTHON: 3.11 }
 jobs:
   test:
     # Dependency bots only. contains(fromJSON(...)) reads as "actor in this set".

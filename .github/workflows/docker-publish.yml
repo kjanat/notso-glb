@@ -13,9 +13,8 @@ on:
         options: [release, nightly]
   schedule: [cron: "0 2 1,15 * *"] # Biweekly build (1st & 15th) at 2:00 AM UTC
   workflow_run: { workflows: [Publish to PyPI], types: [completed] }
-
 defaults: { run: { shell: bash } }
-
+env: { UV_PYTHON: 3.11 }
 jobs:
   push_to_registry:
     name: Push Docker image to Docker Hub
