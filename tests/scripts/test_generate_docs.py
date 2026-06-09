@@ -183,9 +183,16 @@ class TestMain:
 
     @patch("scripts.generate_docs.subprocess.run")
     @patch("scripts.generate_docs.Path")
-    def test_main_workflow(self, mock_path: MagicMock, mock_run: MagicMock) -> None:
+    @patch("scripts.generate_docs.shutil.which")
+    def test_main_workflow(
+        self, mock_which: MagicMock, mock_path: MagicMock, mock_run: MagicMock
+    ) -> None:
         """Should execute full workflow: generate, clean, write, format."""
         from scripts.generate_docs import main
+
+        # Force dprint present so the format step runs deterministically,
+        # independent of whether dprint is on PATH in the test environment.
+        mock_which.return_value = "/usr/bin/dprint"
 
         # Mock subprocess for typer docs
         mock_run.return_value = MagicMock(stdout="# `notso-glb`\n\n$ notso-glb --help")
